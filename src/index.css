@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-sans: "Barlow", system-ui, sans-serif;
+
+  --color-sangue: #D7141A;        /* vermelho do escudo */
+  --color-sangue-escuro: #A30F14;
+  --color-preto: #000000;
+  --color-papel: #FFFFFF;
+  --color-cimento: #F1F1EF;       /* fundo das áreas de trabalho */
+  --color-linha: #DCDCD8;
+  --color-texto-suave: #5C5C58;
+
+  --color-liberado: #1F7A3A;
+  --color-cautela: #B26A00;
+  --color-bloqueado: #A30F14;
+}
+
+html, body { background: var(--color-papel); color: var(--color-preto); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+:focus-visible { outline: 3px solid var(--color-sangue); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* Campos de formulário padrão */
+.campo {
+  width: 100%;
+  border: 1.5px solid var(--color-linha);
+  border-radius: 6px;
+  padding: 0.55rem 0.7rem;
+  background: var(--color-papel);
+  font-size: 1rem;
+}
+.campo:focus { border-color: var(--color-preto); outline: none; }
+.rotulo { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
