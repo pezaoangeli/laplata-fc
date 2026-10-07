@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { collection, doc, getDocs, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import { ADVERSARIOS, JOGADORES, LOCAIS } from '../../data/seed.js'
+import { JOGOS_2026 } from '../../data/jogos2026.js'
 
 // Adiciona só o que ainda não existe (compara pelo nome), então pode ser rodado mais de uma vez sem duplicar.
 async function importarCadastros() {
@@ -40,9 +41,84 @@ async function importarCadastros() {
   return resultado
 }
 
+
+// Importa o calendário 2026 com as súmulas da planilha. Cada jogo tem um ID fixo (imp-AAAA-MM-DD),
+// então rodar de novo não duplica nem sobrescreve o que já foi editado no site.
+async function importarJogos() {
+  const ler = async (c) => (await getDocs(collection(db, c))).docs.map((d) => ({ id: d.id, ...d.data() }))
+  const [jogadores, adversarios, locais, jogos] = await Promise.all([ler('jogadores'), ler('adversarios'), ler('locais'), ler('jogos')])
+  const mapa = (lista) => Object.fromEntries(lista.map((i) => [(i.nome || '').toLowerCase(), i.id]))
+  const idJog = mapa(jogadores), idAdv = mapa(adversarios), idLoc = mapa(locais)
+  const existentes = new Set(jogos.map((j) => j.id))
+
+  const lote = writeBatch(db)
+  const agora = serverTimestamp()
+  const faltando = { jogadores: [], adversarios: [], locais: [] }
+
+  const garantir = (nome, ids, colecao, extra, lista) => {
+    if (!nome) return null
+    const chave = nome.toLowerCase()
+    if (!ids[chave]) {
+      const ref = doc(collection(db, colecao))
+      lote.set(ref, { nome, ...extra, atualizadoEm: agora })
+      if (colecao === 'adversarios')
+        lote.set(doc(db, 'adversariosPrivado', ref.id), { situacao: 'liberado', motivos: [], observacao: '', atualizadoEm: agora })
+      ids[chave] = ref.id
+      lista.push(nome)
+    }
+    return ids[chave]
+  }
+  const jog = (n) => garantir(n, idJog, 'jogadores', { tipo: 'convidado', posicao: '', ativo: true }, faltando.jogadores)
+  const mapaIds = (m) => Object.fromEntries(Object.entries(m).map(([n, v]) => [jog(n), v]))
+
+  let criados = 0
+  for (const j of JOGOS_2026) {
+    const id = `imp-${j.data}`
+    if (existentes.has(id)) continue
+    const s = j.sumula
+    lote.set(doc(db, 'jogos', id), {
+      data: j.data,
+      temporada: Number(j.data.slice(0, 4)),
+      horario: j.horario,
+      mando: j.mando,
+      status: j.status,
+      adversarioId: garantir(j.adversario, idAdv, 'adversarios', { cidade: '' }, faltando.adversarios),
+      localId: garantir(j.local, idLoc, 'locais', { cidade: '' }, faltando.locais),
+      placar: j.placar || null,
+      sumula: s
+        ? {
+            presentes: s.presentes.map(jog),
+            gols: mapaIds(s.gols),
+            assistencias: mapaIds(s.assistencias),
+            melhores: s.melhores.map(jog),
+            uniforme: s.uniforme.map(jog),
+            agua: s.agua.map(jog),
+          }
+        : null,
+      criadoEm: agora,
+      atualizadoEm: agora,
+    })
+    criados++
+  }
+  await lote.commit()
+  return { criados, ignorados: JOGOS_2026.length - criados, faltando }
+}
+
 export default function Importar() {
   const [estado, setEstado] = useState('parado') // parado | importando | feito | erro
   const [resultado, setResultado] = useState(null)
+  const [estadoJogos, setEstadoJogos] = useState('parado')
+  const [resJogos, setResJogos] = useState(null)
+
+  async function rodarJogos() {
+    setEstadoJogos('importando')
+    try {
+      setResJogos(await importarJogos())
+      setEstadoJogos('feito')
+    } catch {
+      setEstadoJogos('erro')
+    }
+  }
 
   async function rodar() {
     setEstado('importando')
@@ -78,6 +154,34 @@ export default function Importar() {
       {estado === 'erro' && (
         <p className="mt-4 font-semibold text-sangue-escuro" role="alert">
           A importação falhou. Confira se seu login é admin e se as regras do Firestore foram publicadas.
+        </p>
+      )}
+
+      <hr className="my-8 border-linha" />
+
+      <h2 className="font-display text-3xl font-bold">Jogos de 2026</h2>
+      <p className="mt-2">
+        Traz os {JOGOS_2026.length} sábados do calendário de 2026, com as súmulas dos {JOGOS_2026.filter((j) => j.sumula).length} jogos
+        registrados na planilha (até 16/05). Rode depois de importar os cadastros.
+      </p>
+      <p className="mt-2 text-texto-suave">
+        Jogos já importados são ignorados, então nada que você editou no site é sobrescrito.
+      </p>
+      <button onClick={rodarJogos} disabled={estadoJogos === 'importando'}
+        className="mt-5 rounded-md bg-sangue px-5 py-2.5 font-display text-xl font-bold text-papel hover:bg-sangue-escuro disabled:opacity-60">
+        {estadoJogos === 'importando' ? 'Importando…' : 'Importar jogos de 2026'}
+      </button>
+      {estadoJogos === 'feito' && (
+        <div className="mt-4 rounded-md bg-papel p-3" role="status">
+          <p>Importação concluída: {resJogos.criados} jogos adicionados{resJogos.ignorados ? `, ${resJogos.ignorados} já existiam` : ''}.</p>
+          {Object.entries(resJogos.faltando).filter(([, l]) => l.length).map(([tipo, l]) => (
+            <p key={tipo} className="text-sm text-texto-suave">Também foram criados em {tipo}: {l.join(', ')}.</p>
+          ))}
+        </div>
+      )}
+      {estadoJogos === 'erro' && (
+        <p className="mt-4 font-semibold text-sangue-escuro" role="alert">
+          A importação falhou. Confira se você está logada com uma conta admin e tente de novo.
         </p>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 const abas = [
+  { to: 'jogos', rotulo: 'Jogos' },
   { to: 'jogadores', rotulo: 'Jogadores' },
   { to: 'adversarios', rotulo: 'Adversários' },
   { to: 'locais', rotulo: 'Campos' },

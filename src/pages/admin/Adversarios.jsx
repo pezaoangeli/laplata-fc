@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import { useCollection } from '../../lib/useCollection.js'
+import { useRolarAte } from '../../lib/useRolarAte.js'
 import { MOTIVOS, SITUACOES } from '../../lib/constantes.js'
 import SituacaoBadge from '../../components/SituacaoBadge.jsx'
 
@@ -13,6 +14,7 @@ export default function Adversarios() {
   const [filtro, setFiltro] = useState('todos')
   const [busca, setBusca] = useState('')
   const [form, setForm] = useState(null)
+  const formRef = useRolarAte(form ? form.id || 'novo' : null)
   const [erro, setErro] = useState('')
   const [salvando, setSalvando] = useState(false)
 
@@ -91,7 +93,7 @@ export default function Adversarios() {
       </div>
 
       {form && (
-        <form onSubmit={salvar} className="mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
+        <form ref={formRef} onSubmit={salvar} className="scroll-mt-4 mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
           <h2 className="font-display text-2xl font-bold sm:col-span-2">{form.id ? `Editar ${form.nome}` : 'Novo adversário'}</h2>
           <div>
             <label className="rotulo" htmlFor="nome">Nome do time</label>

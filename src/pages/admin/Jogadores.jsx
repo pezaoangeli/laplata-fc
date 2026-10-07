@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import { useCollection } from '../../lib/useCollection.js'
+import { useRolarAte } from '../../lib/useRolarAte.js'
 import { POSICOES } from '../../lib/constantes.js'
 
 const vazio = { nome: '', posicao: '', tipo: 'fixo', ativo: true }
@@ -9,6 +10,7 @@ const vazio = { nome: '', posicao: '', tipo: 'fixo', ativo: true }
 export default function Jogadores() {
   const { dados: jogadores, carregando } = useCollection('jogadores')
   const [form, setForm] = useState(null) // null = formulário fechado
+  const formRef = useRolarAte(form ? form.id || 'novo' : null)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -59,7 +61,7 @@ export default function Jogadores() {
       </div>
 
       {form && (
-        <form onSubmit={salvar} className="mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
+        <form ref={formRef} onSubmit={salvar} className="scroll-mt-4 mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
           <h2 className="font-display text-2xl font-bold sm:col-span-2">{form.id ? `Editar ${form.nome}` : 'Novo jogador'}</h2>
           <div>
             <label className="rotulo" htmlFor="nome">Nome ou apelido</label>

@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 import { useCollection } from '../../lib/useCollection.js'
+import { useRolarAte } from '../../lib/useRolarAte.js'
 
 const vazio = { nome: '', cidade: '' }
 
 export default function Locais() {
   const { dados: locais, carregando } = useCollection('locais')
   const [form, setForm] = useState(null)
+  const formRef = useRolarAte(form ? form.id || 'novo' : null)
   const [erro, setErro] = useState('')
 
   async function salvar(e) {
@@ -46,7 +48,7 @@ export default function Locais() {
       </div>
 
       {form && (
-        <form onSubmit={salvar} className="mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
+        <form ref={formRef} onSubmit={salvar} className="scroll-mt-4 mt-5 grid gap-4 rounded-lg border-2 border-preto bg-papel p-4 sm:grid-cols-2">
           <div>
             <label className="rotulo" htmlFor="nome">Nome do campo</label>
             <input id="nome" className="campo" autoFocus value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />

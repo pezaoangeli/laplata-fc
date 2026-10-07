@@ -3,7 +3,7 @@ import Escudo from './Escudo.jsx'
 import { useAuth } from '../contexts/AuthContext.jsx'
 
 const linkClasse = ({ isActive }) =>
-  `px-3 py-2 font-display text-lg font-semibold tracking-wide ${
+  `px-2 py-2 font-display sm:px-3 text-lg font-semibold tracking-wide ${
     isActive ? 'text-papel underline decoration-sangue decoration-4 underline-offset-8' : 'text-papel/75 hover:text-papel'
   }`
 
@@ -16,13 +16,14 @@ export default function Layout() {
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-2">
           <Link to="/" className="flex items-center gap-2">
             <Escudo className="h-11 w-11" />
-            <span className="font-display text-2xl font-extrabold uppercase text-papel">La Plata</span>
+            <span className="hidden font-display text-2xl font-extrabold uppercase text-papel sm:inline">La Plata</span>
           </Link>
           <nav className="ml-auto flex items-center">
             <NavLink to="/" end className={linkClasse}>Início</NavLink>
+            <NavLink to="/jogos" className={linkClasse}>Jogos</NavLink>
             {isAdmin && <NavLink to="/admin" className={linkClasse}>Painel</NavLink>}
             {user ? (
-              <button onClick={sair} className="px-3 py-2 font-display text-lg font-semibold text-papel/75 hover:text-papel">
+              <button onClick={sair} className="px-2 py-2 font-display text-lg font-semibold text-papel/75 sm:px-3 hover:text-papel">
                 Sair
               </button>
             ) : (
