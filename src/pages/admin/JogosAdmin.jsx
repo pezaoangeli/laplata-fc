@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { addDoc, collection, deleteDoc, doc, serverTimestamp, updateDoc } from 'firebase/firestore'
 import { db } from '../../firebase.js'
-import { agruparPorMes, hojeISO, porId, useJogos } from '../../lib/jogos.js'
+import { agruparPorMes, ehJogo, hojeISO, porId, tipoJogo, useJogos } from '../../lib/jogos.js'
 import { temporadaAtual } from '../../lib/temporadas.js'
 import { useCollection } from '../../lib/useCollection.js'
 import { useRolarAte } from '../../lib/useRolarAte.js'
@@ -10,7 +10,7 @@ import { MOTIVOS, SITUACOES } from '../../lib/constantes.js'
 import LinhaJogo from '../../components/LinhaJogo.jsx'
 import SeletorTemporada from '../../components/SeletorTemporada.jsx'
 
-const vazio = { data: '', horario: '14:00', mando: 'casa', localId: '', adversarioId: '', status: 'agendado' }
+const vazio = { data: '', horario: '14:00', mando: 'casa', localId: '', adversarioId: '', status: 'agendado', tipo: 'jogo', titulo: '' }
 
 export default function JogosAdmin() {
   const [temporada, setTemporada] = useState(temporadaAtual())
@@ -27,7 +27,7 @@ export default function JogosAdmin() {
   const [salvando, setSalvando] = useState(false)
 
   const proximo = jogos.find((j) => j.status === 'agendado' && j.data >= hojeISO())
-  const pendentes = jogos.filter((j) => j.status === 'agendado' && j.data < hojeISO()).length
+  const pendentes = jogos.filter((j) => ehJogo(j) && j.status === 'agendado' && j.data < hojeISO()).length
   const alerta = useMemo(() => {
     const p = form?.adversarioId && privados[form.adversarioId]
     return p && p.situacao !== 'liberado' ? p : null
@@ -36,6 +36,7 @@ export default function JogosAdmin() {
   async function salvar(e) {
     e.preventDefault()
     if (!form.data) return setErro('Escolha a data do jogo.')
+    if (form.tipo !== 'jogo' && !form.titulo.trim()) return setErro('Dê um nome, como "Grenal" ou "Confraternização".')
     setSalvando(true)
     setErro('')
     const dados = {
@@ -44,7 +45,9 @@ export default function JogosAdmin() {
       horario: form.horario || '',
       mando: form.mando,
       localId: form.localId || null,
-      adversarioId: form.adversarioId || null,
+      adversarioId: form.tipo === 'jogo' ? form.adversarioId || null : null,
+      tipo: form.tipo,
+      titulo: form.tipo === 'jogo' ? '' : form.titulo.trim(),
       status: form.status,
       atualizadoEm: serverTimestamp(),
     }
@@ -107,7 +110,22 @@ export default function JogosAdmin() {
               ))}
             </div>
           </fieldset>
-          <div className="sm:col-span-2">
+          <div>
+            <label className="rotulo" htmlFor="tipo">Tipo</label>
+            <select id="tipo" className="campo" value={form.tipo || 'jogo'} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+              <option value="jogo">Jogo contra adversário</option>
+              <option value="interno">Jogo interno (ex.: Grenal)</option>
+              <option value="evento">Evento (ex.: Confraternização)</option>
+            </select>
+          </div>
+          {form.tipo !== 'jogo' && (
+            <div className="sm:col-span-2">
+              <label className="rotulo" htmlFor="titulo">Nome</label>
+              <input id="titulo" className="campo" value={form.titulo || ''} placeholder={form.tipo === 'interno' ? 'Grenal' : 'Confraternização'}
+                onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+            </div>
+          )}
+          {form.tipo === 'jogo' && <div className="sm:col-span-2">
             <label className="rotulo" htmlFor="adv">Adversário</label>
             <select id="adv" className="campo" value={form.adversarioId || ''} onChange={(e) => setForm({ ...form, adversarioId: e.target.value })}>
               <option value="">A definir</option>
@@ -119,7 +137,7 @@ export default function JogosAdmin() {
               ))}
             </select>
             <p className="mt-1 text-sm text-texto-suave">Time novo? Cadastre antes na aba Adversários.</p>
-          </div>
+          </div>}
           <div>
             <label className="rotulo" htmlFor="local">Campo</label>
             <select id="local" className="campo" value={form.localId || ''} onChange={(e) => setForm({ ...form, localId: e.target.value })}>
@@ -175,13 +193,13 @@ export default function JogosAdmin() {
                   <LinhaJogo jogo={j} adversario={adversarios[j.adversarioId]} local={locais[j.localId]} destaque={j.id === proximo?.id}
                     acoes={
                       <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-                        {j.status !== 'cancelado' && (
+                        {j.status !== 'cancelado' && ehJogo(j) && (
                           <Link to={`/admin/jogos/${j.id}/sumula`}
                             className="rounded bg-preto px-2 py-1 text-center text-sm font-semibold text-papel">
                             Súmula
                           </Link>
                         )}
-                        <button onClick={() => { setForm({ ...vazio, ...j }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
+                        <button onClick={() => { setForm({ ...vazio, ...j, tipo: tipoJogo(j), titulo: j.titulo || '' }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
                       </div>
                     } />
                 </li>

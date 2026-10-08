@@ -18,6 +18,7 @@ import Importar from './pages/admin/Importar.jsx'
 import JogosAdmin from './pages/admin/JogosAdmin.jsx'
 import Sumula from './pages/admin/Sumula.jsx'
 import PremiacoesAdmin from './pages/admin/PremiacoesAdmin.jsx'
+import Agenda from './pages/admin/Agenda.jsx'
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
           <Route index element={<Navigate to="jogos" replace />} />
           <Route path="jogos" element={<JogosAdmin />} />
           <Route path="jogos/:id/sumula" element={<Sumula />} />
+          <Route path="agenda" element={<Agenda />} />
           <Route path="jogadores" element={<Jogadores />} />
           <Route path="adversarios" element={<Adversarios />} />
           <Route path="locais" element={<Locais />} />

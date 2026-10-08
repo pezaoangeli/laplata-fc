@@ -1,6 +1,6 @@
-import { resultado } from './jogos.js'
+import { ehJogo, resultado } from './jogos.js'
 
-export const realizados = (jogos) => jogos.filter((j) => j.status === 'realizado' && j.placar)
+export const realizados = (jogos) => jogos.filter((j) => ehJogo(j) && j.status === 'realizado' && j.placar)
 
 // Números de cada jogador a partir das súmulas
 export function estatisticasJogadores(jogos) {

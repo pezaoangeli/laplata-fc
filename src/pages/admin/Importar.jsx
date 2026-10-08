@@ -3,6 +3,7 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from 'firebase/
 import { db } from '../../firebase.js'
 import { ADVERSARIOS, JOGADORES, LOCAIS } from '../../data/seed.js'
 import { JOGOS_2026 } from '../../data/jogos2026.js'
+import { JOGOS_2027 } from '../../data/jogos2027.js'
 
 // Adiciona só o que ainda não existe (compara pelo nome), então pode ser rodado mais de uma vez sem duplicar.
 async function importarCadastros() {
@@ -44,7 +45,7 @@ async function importarCadastros() {
 
 // Importa o calendário 2026 com as súmulas da planilha. Cada jogo tem um ID fixo (imp-AAAA-MM-DD),
 // então rodar de novo não duplica nem sobrescreve o que já foi editado no site.
-async function importarJogos() {
+async function importarJogos(lista) {
   const ler = async (c) => (await getDocs(collection(db, c))).docs.map((d) => ({ id: d.id, ...d.data() }))
   const [jogadores, adversarios, locais, jogos] = await Promise.all([ler('jogadores'), ler('adversarios'), ler('locais'), ler('jogos')])
   const mapa = (lista) => Object.fromEntries(lista.map((i) => [(i.nome || '').toLowerCase(), i.id]))
@@ -72,7 +73,7 @@ async function importarJogos() {
   const mapaIds = (m) => Object.fromEntries(Object.entries(m).map(([n, v]) => [jog(n), v]))
 
   let criados = 0
-  for (const j of JOGOS_2026) {
+  for (const j of lista) {
     const id = `imp-${j.data}`
     if (existentes.has(id)) continue
     const s = j.sumula
@@ -82,6 +83,8 @@ async function importarJogos() {
       horario: j.horario,
       mando: j.mando,
       status: j.status,
+      tipo: j.tipo || 'jogo',
+      titulo: j.titulo || '',
       adversarioId: garantir(j.adversario, idAdv, 'adversarios', { cidade: '' }, faltando.adversarios),
       localId: garantir(j.local, idLoc, 'locais', { cidade: '' }, faltando.locais),
       placar: j.placar || null,
@@ -101,19 +104,25 @@ async function importarJogos() {
     criados++
   }
   await lote.commit()
-  return { criados, ignorados: JOGOS_2026.length - criados, faltando }
+  return { criados, ignorados: lista.length - criados, faltando }
 }
 
 export default function Importar() {
   const [estado, setEstado] = useState('parado') // parado | importando | feito | erro
   const [resultado, setResultado] = useState(null)
+  const [estado27, setEstado27] = useState('parado')
+  const [res27, setRes27] = useState(null)
+  async function rodar27() {
+    setEstado27('importando')
+    try { setRes27(await importarJogos(JOGOS_2027)); setEstado27('feito') } catch { setEstado27('erro') }
+  }
   const [estadoJogos, setEstadoJogos] = useState('parado')
   const [resJogos, setResJogos] = useState(null)
 
   async function rodarJogos() {
     setEstadoJogos('importando')
     try {
-      setResJogos(await importarJogos())
+      setResJogos(await importarJogos(JOGOS_2026))
       setEstadoJogos('feito')
     } catch {
       setEstadoJogos('erro')
@@ -183,6 +192,30 @@ export default function Importar() {
         <p className="mt-4 font-semibold text-sangue-escuro" role="alert">
           A importação falhou. Confira se você está logada com uma conta admin e tente de novo.
         </p>
+      )}
+
+      <hr className="my-8 border-linha" />
+
+      <h2 className="font-display text-3xl font-bold">Calendário de 2027</h2>
+      <p className="mt-2">
+        Traz os {JOGOS_2027.length} sábados de 2027 da planilha da organização: {JOGOS_2027.filter((j) => j.adversario).length} jogos marcados,
+        {' '}{JOGOS_2027.filter((j) => !j.adversario && !j.tipo).length} datas livres, o Grenal e a Confraternização.
+        Times e campos novos são cadastrados automaticamente.
+      </p>
+      <button onClick={rodar27} disabled={estado27 === 'importando'}
+        className="mt-5 rounded-md bg-sangue px-5 py-2.5 font-display text-xl font-bold text-papel hover:bg-sangue-escuro disabled:opacity-60">
+        {estado27 === 'importando' ? 'Importando…' : 'Importar calendário de 2027'}
+      </button>
+      {estado27 === 'feito' && (
+        <div className="mt-4 rounded-md bg-papel p-3" role="status">
+          <p>Importação concluída: {res27.criados} datas adicionadas{res27.ignorados ? `, ${res27.ignorados} já existiam` : ''}.</p>
+          {Object.entries(res27.faltando).filter(([, l]) => l.length).map(([tipo, l]) => (
+            <p key={tipo} className="text-sm text-texto-suave">Também foram criados em {tipo}: {l.join(', ')}.</p>
+          ))}
+        </div>
+      )}
+      {estado27 === 'erro' && (
+        <p className="mt-4 font-semibold text-sangue-escuro" role="alert">A importação falhou. Confira se você está logada com uma conta admin e tente de novo.</p>
       )}
     </div>
   )

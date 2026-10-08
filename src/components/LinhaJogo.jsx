@@ -1,4 +1,4 @@
-import { CORES_RESULTADO, formatarData, resultado, situacaoJogo } from '../lib/jogos.js'
+import { CORES_RESULTADO, formatarData, resultado, situacaoJogo, tipoJogo } from '../lib/jogos.js'
 
 const ROTULO_SITUACAO = {
   cancelado: 'Cancelado',
@@ -18,11 +18,11 @@ export default function LinhaJogo({ jogo, adversario, local, acoes, destaque = f
       </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate font-semibold ${sit === 'cancelado' ? 'line-through' : ''}`}>
-          {adversario?.nome || 'Adversário a definir'}
+          {tipoJogo(jogo) === 'jogo' ? adversario?.nome || 'Adversário a definir' : jogo.titulo || 'Evento'}
+          {tipoJogo(jogo) !== 'jogo' && <span className="ml-2 rounded bg-sangue px-1.5 py-0.5 align-middle text-xs font-semibold text-papel">{jogo.tipo === 'interno' ? 'interno' : 'evento'}</span>}
         </p>
         <p className="truncate text-sm text-texto-suave">
-          {jogo.mando === 'casa' ? 'Em casa' : 'Fora'}
-          {local ? `, ${local.nome}` : ''}
+          {tipoJogo(jogo) === 'evento' ? (local ? local.nome : 'Local a definir') : `${jogo.mando === 'casa' ? 'Em casa' : 'Fora'}${local ? `, ${local.nome}` : ''}`}
           {adversario?.cidade ? ` (time de ${adversario.cidade})` : ''}
         </p>
       </div>

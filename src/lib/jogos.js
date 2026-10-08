@@ -21,6 +21,14 @@ export function formatarData(iso, { diaSemana = true } = {}) {
 
 export const nomeMes = (iso) => MESES_LONGOS[comoData(iso).getMonth()]
 
+// Tipos: 'jogo' (padrão), 'interno' (ex.: Grenal) e 'evento' (ex.: Confraternização)
+export const tipoJogo = (j) => j.tipo || 'jogo'
+export const ehJogo = (j) => tipoJogo(j) === 'jogo'
+export function nomeConfronto(j, adversarios) {
+  if (tipoJogo(j) !== 'jogo') return j.titulo || (j.tipo === 'interno' ? 'Jogo interno' : 'Evento')
+  return adversarios[j.adversarioId]?.nome || 'Adversário a definir'
+}
+
 export function resultado(placar) {
   if (!placar) return null
   if (placar.nos > placar.eles) return 'V'

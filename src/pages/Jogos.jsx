@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { agruparPorMes, hojeISO, porId, resultado, useJogos } from '../lib/jogos.js'
+import { agruparPorMes, ehJogo, hojeISO, porId, resultado, useJogos } from '../lib/jogos.js'
 import { temporadaAtual } from '../lib/temporadas.js'
 import { useCollection } from '../lib/useCollection.js'
 import LinhaJogo from '../components/LinhaJogo.jsx'
@@ -12,7 +12,7 @@ export default function Jogos() {
   const adversarios = porId(useCollection('adversarios').dados)
   const locais = porId(useCollection('locais').dados)
 
-  const realizados = jogos.filter((j) => j.status === 'realizado' && j.placar)
+  const realizados = jogos.filter((j) => ehJogo(j) && j.status === 'realizado' && j.placar)
   const conta = (r) => realizados.filter((j) => resultado(j.placar) === r).length
   const gf = realizados.reduce((s, j) => s + j.placar.nos, 0)
   const gs = realizados.reduce((s, j) => s + j.placar.eles, 0)
@@ -54,7 +54,7 @@ export default function Jogos() {
                 )
                 return (
                   <li key={j.id}>
-                    {j.status === 'realizado' ? (
+                    {j.status === 'realizado' && ehJogo(j) ? (
                       <Link to={`/jogos/${j.id}`} className="block hover:bg-cimento">{linha}</Link>
                     ) : linha}
                   </li>

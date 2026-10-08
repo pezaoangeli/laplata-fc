@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Escudo from '../components/Escudo.jsx'
-import { CORES_RESULTADO, formatarData, hojeISO, porId, resultado, useTodosJogos } from '../lib/jogos.js'
+import { CORES_RESULTADO, formatarData, hojeISO, nomeConfronto, porId, resultado, useTodosJogos } from '../lib/jogos.js'
 import { campanha, estatisticasJogadores, filaRodizio, lideres, realizados } from '../lib/estatisticas.js'
 import { temporadaAtual } from '../lib/temporadas.js'
 import { useCollection } from '../lib/useCollection.js'
@@ -53,7 +53,7 @@ export default function Inicio() {
           <span className="rounded bg-sangue px-2.5 py-0.5 font-display text-base font-bold uppercase tracking-wide text-papel">Próximo jogo</span>
           {proximo ? (
             <>
-              <span className="font-display text-3xl font-extrabold leading-none">{adversarios[proximo.adversarioId]?.nome || 'Adversário a definir'}</span>
+              <span className="font-display text-3xl font-extrabold leading-none">{nomeConfronto(proximo, adversarios)}</span>
               <span className="text-texto-suave">
                 {formatarData(proximo.data)}{proximo.horario ? `, ${proximo.horario.replace(':00', 'h')}` : ''}, {proximo.mando === 'casa' ? 'em casa' : 'fora'}
                 {locais[proximo.localId] ? `, ${locais[proximo.localId].nome}` : ''}
