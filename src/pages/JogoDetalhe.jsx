@@ -1,6 +1,8 @@
 import { Link, useParams } from 'react-router-dom'
 import { CORES_RESULTADO, formatarData, porId, resultado, useJogo } from '../lib/jogos.js'
 import { useCollection } from '../lib/useCollection.js'
+import { imagemResultado } from '../lib/imagem.js'
+import BotaoImagem from '../components/BotaoImagem.jsx'
 
 const ROTULO_RES = { V: 'Vitória', E: 'Empate', D: 'Derrota' }
 
@@ -60,6 +62,16 @@ export default function JogoDetalhe() {
           {(s.agua || []).map((jid) => <Item key={`a${jid}`} nome={nome(jid)} valor="levou a água" />)}
         </Bloco>
       </div>
+
+      {jogo.placar && (
+        <div className="mt-4">
+          <BotaoImagem nomeArquivo={`laplata-${jogo.data}.png`}
+            gerar={() => imagemResultado({
+              jogo, adversario: adv, local: locais[jogo.localId],
+              nomes: Object.fromEntries(Object.entries(jogadores).map(([k, v]) => [k, v.nome])),
+            })} />
+        </div>
+      )}
 
       <section className="mt-6">
         <h2 className="font-display text-2xl font-bold">Quem jogou ({presentes.length})</h2>

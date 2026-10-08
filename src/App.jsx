@@ -4,6 +4,11 @@ import AdminRoute from './components/AdminRoute.jsx'
 import Inicio from './pages/Inicio.jsx'
 import Jogos from './pages/Jogos.jsx'
 import JogoDetalhe from './pages/JogoDetalhe.jsx'
+import Estatisticas from './pages/Estatisticas.jsx'
+import Elenco from './pages/Elenco.jsx'
+import JogadorDetalhe from './pages/JogadorDetalhe.jsx'
+import AdversariosPublico from './pages/AdversariosPublico.jsx'
+import Premiacoes from './pages/Premiacoes.jsx'
 import Login from './pages/Login.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import Jogadores from './pages/admin/Jogadores.jsx'
@@ -12,6 +17,7 @@ import Locais from './pages/admin/Locais.jsx'
 import Importar from './pages/admin/Importar.jsx'
 import JogosAdmin from './pages/admin/JogosAdmin.jsx'
 import Sumula from './pages/admin/Sumula.jsx'
+import PremiacoesAdmin from './pages/admin/PremiacoesAdmin.jsx'
 
 export default function App() {
   return (
@@ -20,6 +26,11 @@ export default function App() {
         <Route index element={<Inicio />} />
         <Route path="jogos" element={<Jogos />} />
         <Route path="jogos/:id" element={<JogoDetalhe />} />
+        <Route path="numeros" element={<Estatisticas />} />
+        <Route path="elenco" element={<Elenco />} />
+        <Route path="elenco/:id" element={<JogadorDetalhe />} />
+        <Route path="adversarios" element={<AdversariosPublico />} />
+        <Route path="premiacoes" element={<Premiacoes />} />
         <Route path="entrar" element={<Login />} />
         <Route
           path="admin"
@@ -35,6 +46,7 @@ export default function App() {
           <Route path="jogadores" element={<Jogadores />} />
           <Route path="adversarios" element={<Adversarios />} />
           <Route path="locais" element={<Locais />} />
+          <Route path="premiacoes" element={<PremiacoesAdmin />} />
           <Route path="importar" element={<Importar />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

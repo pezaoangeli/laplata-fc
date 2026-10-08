@@ -5,6 +5,7 @@ const abas = [
   { to: 'jogadores', rotulo: 'Jogadores' },
   { to: 'adversarios', rotulo: 'Adversários' },
   { to: 'locais', rotulo: 'Campos' },
+  { to: 'premiacoes', rotulo: 'Premiações' },
   { to: 'importar', rotulo: 'Importar dados' },
 ]
 

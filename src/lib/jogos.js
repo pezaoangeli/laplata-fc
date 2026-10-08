@@ -72,6 +72,19 @@ export function useJogos(temporada) {
   return { jogos, carregando }
 }
 
+export function useTodosJogos() {
+  const [jogos, setJogos] = useState([])
+  const [carregando, setCarregando] = useState(true)
+  useEffect(
+    () => onSnapshot(collection(db, 'jogos'), (snap) => {
+      setJogos(ordenarJogos(snap.docs.map((d) => ({ id: d.id, ...d.data() }))))
+      setCarregando(false)
+    }, () => setCarregando(false)),
+    []
+  )
+  return { jogos, carregando }
+}
+
 export function useJogo(id) {
   const [jogo, setJogo] = useState(undefined) // undefined = carregando, null = não existe
   useEffect(() => onSnapshot(doc(db, 'jogos', id), (d) => setJogo(d.exists() ? { id: d.id, ...d.data() } : null)), [id])

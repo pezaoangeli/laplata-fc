@@ -42,4 +42,5 @@ npm run deploy
 | `adversariosPrivado` | **só admin** | situacao (liberado/cautela/nao_marcar), motivos[], observacao (mesmo ID do adversário) |
 | `locais` | todos | nome, cidade |
 | `jogos` | todos | data, temporada, horario, mando (casa/fora), localId, adversarioId, status (agendado/realizado/cancelado), placar {nos, eles}, sumula {presentes[], gols{id:n}, assistencias{id:n}, melhores[], uniforme[], agua[]} |
+| `premiacoes` | todos | manuais[{titulo, jogadores[], detalhe}] (ID = ano da temporada) |
 | `admins` | o próprio usuário | nome (ID = UID do login) |

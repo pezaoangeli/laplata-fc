@@ -20,6 +20,7 @@ service cloud.firestore {
     match /locais/{id}      { allow read: if true; allow write: if isAdmin(); }
     match /adversarios/{id} { allow read: if true; allow write: if isAdmin(); }
     match /jogos/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /premiacoes/{id}  { allow read: if true; allow write: if isAdmin(); }
 
     // Controle interno de adversários: SÓ admin lê e escreve
     match /adversariosPrivado/{id} { allow read, write: if isAdmin(); }
