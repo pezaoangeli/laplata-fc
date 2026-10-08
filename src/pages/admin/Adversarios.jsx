@@ -3,10 +3,10 @@ import { collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore
 import { db } from '../../firebase.js'
 import { useCollection } from '../../lib/useCollection.js'
 import { useRolarAte } from '../../lib/useRolarAte.js'
-import { MOTIVOS, SITUACOES } from '../../lib/constantes.js'
+import { MOTIVOS, PEDE_MOTIVO, SITUACOES, linkWhatsApp } from '../../lib/constantes.js'
 import SituacaoBadge from '../../components/SituacaoBadge.jsx'
 
-const vazio = { nome: '', cidade: '', situacao: 'liberado', motivos: [], observacao: '' }
+const vazio = { nome: '', cidade: '', situacao: 'liberado', motivos: [], observacao: '', contatoNome: '', contatoTelefone: '' }
 
 export default function Adversarios() {
   const { dados: publicos, carregando } = useCollection('adversarios')
@@ -26,6 +26,8 @@ export default function Adversarios() {
       situacao: porId[a.id]?.situacao || 'liberado',
       motivos: porId[a.id]?.motivos || [],
       observacao: porId[a.id]?.observacao || '',
+      contatoNome: porId[a.id]?.contatoNome || '',
+      contatoTelefone: porId[a.id]?.contatoTelefone || '',
     }))
   }, [publicos, privados])
 
@@ -33,7 +35,7 @@ export default function Adversarios() {
   const visiveis = adversarios.filter(
     (a) =>
       (filtro === 'todos' || a.situacao === filtro) &&
-      `${a.nome} ${a.cidade || ''}`.toLowerCase().includes(busca.toLowerCase())
+      `${a.nome} ${a.cidade || ''} ${a.contatoNome || ''}`.toLowerCase().includes(busca.toLowerCase())
   )
 
   async function salvar(e) {
@@ -42,7 +44,7 @@ export default function Adversarios() {
     if (!nome) return setErro('Preencha o nome do time.')
     if (adversarios.some((a) => a.id !== form.id && a.nome.toLowerCase() === nome.toLowerCase()))
       return setErro('Já existe um adversário com esse nome.')
-    if (form.situacao !== 'liberado' && form.motivos.length === 0)
+    if (PEDE_MOTIVO.includes(form.situacao) && form.motivos.length === 0)
       return setErro('Marque pelo menos um motivo.')
 
     setSalvando(true)
@@ -53,8 +55,10 @@ export default function Adversarios() {
       lote.set(doc(db, 'adversarios', id), { nome, cidade: form.cidade.trim(), atualizadoEm: serverTimestamp() }, { merge: true })
       lote.set(doc(db, 'adversariosPrivado', id), {
         situacao: form.situacao,
-        motivos: form.situacao === 'liberado' ? [] : form.motivos,
+        motivos: PEDE_MOTIVO.includes(form.situacao) ? form.motivos : [],
         observacao: form.observacao.trim(),
+        contatoNome: form.contatoNome.trim(),
+        contatoTelefone: form.contatoTelefone.trim(),
         atualizadoEm: serverTimestamp(),
       })
       await lote.commit()
@@ -122,7 +126,7 @@ export default function Adversarios() {
               </div>
             </fieldset>
 
-            {form.situacao !== 'liberado' && (
+            {PEDE_MOTIVO.includes(form.situacao) && (
               <fieldset className="mt-3">
                 <legend className="rotulo">Motivos</legend>
                 <div className="grid gap-1 sm:grid-cols-2">
@@ -136,6 +140,18 @@ export default function Adversarios() {
               </fieldset>
             )}
 
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="rotulo" htmlFor="cnome">Contato (nome)</label>
+                <input id="cnome" className="campo" placeholder="Cristian" value={form.contatoNome}
+                  onChange={(e) => setForm({ ...form, contatoNome: e.target.value })} />
+              </div>
+              <div>
+                <label className="rotulo" htmlFor="ctel">Telefone ou WhatsApp</label>
+                <input id="ctel" type="tel" className="campo" placeholder="51 99689-4900" value={form.contatoTelefone}
+                  onChange={(e) => setForm({ ...form, contatoTelefone: e.target.value })} />
+              </div>
+            </div>
             <div className="mt-3">
               <label className="rotulo" htmlFor="obs">Observação</label>
               <textarea id="obs" rows={3} className="campo" placeholder="O que aconteceu, quando, com quem falar…"
@@ -158,13 +174,14 @@ export default function Adversarios() {
         {[['todos', `Todos (${adversarios.length})`],
           ['liberado', `Liberados (${contagem('liberado')})`],
           ['cautela', `Com cautela (${contagem('cautela')})`],
-          ['nao_marcar', `Não marcar (${contagem('nao_marcar')})`]].map(([v, r]) => (
+          ['nao_marcar', `Não marcar (${contagem('nao_marcar')})`],
+          ['parado', `Parados (${contagem('parado')})`]].map(([v, r]) => (
           <button key={v} onClick={() => setFiltro(v)}
             className={`rounded-full px-3 py-1 text-sm font-semibold ${filtro === v ? 'bg-preto text-papel' : 'bg-papel text-preto'}`}>
             {r}
           </button>
         ))}
-        <input type="search" placeholder="Buscar time ou cidade" className="campo ml-auto max-w-xs"
+        <input type="search" placeholder="Buscar time, cidade ou contato" className="campo ml-auto max-w-xs"
           value={busca} onChange={(e) => setBusca(e.target.value)} aria-label="Buscar adversário" />
       </div>
 
@@ -184,6 +201,14 @@ export default function Adversarios() {
                   <p className="mt-1 text-sm">{a.motivos.map((m) => MOTIVOS[m]).join(', ')}</p>
                 )}
                 {a.observacao && <p className="mt-1 text-sm italic text-texto-suave">{a.observacao}</p>}
+                {(a.contatoNome || a.contatoTelefone) && (
+                  <p className="mt-1 text-sm">
+                    Contato: {a.contatoNome || 'sem nome'}
+                    {a.contatoTelefone && (linkWhatsApp(a.contatoTelefone)
+                      ? <>, <a href={linkWhatsApp(a.contatoTelefone)} target="_blank" rel="noreferrer" className="font-semibold text-liberado underline">{a.contatoTelefone} (WhatsApp)</a></>
+                      : `, ${a.contatoTelefone}`)}
+                  </p>
+                )}
               </div>
               <button onClick={() => { setForm({ ...vazio, ...a }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
               <button onClick={() => excluir(a)} className="rounded px-2 py-1 text-sm font-semibold text-sangue-escuro hover:bg-cimento">Excluir</button>

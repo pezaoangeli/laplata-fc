@@ -8,6 +8,7 @@ const abas = [
   { to: 'locais', rotulo: 'Campos' },
   { to: 'premiacoes', rotulo: 'Premiações' },
   { to: 'importar', rotulo: 'Importar dados' },
+  { to: 'backup', rotulo: 'Backup' },
 ]
 
 export default function AdminLayout() {

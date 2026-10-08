@@ -3,7 +3,7 @@ import { collection, doc, serverTimestamp, updateDoc, writeBatch } from 'firebas
 import { db } from '../../firebase.js'
 import { formatarData, nomeMes, porId, tipoJogo, useJogos } from '../../lib/jogos.js'
 import { ESTADOS, analisarAgenda, datasParaTime, sugestoesParaData, textoWhatsApp } from '../../lib/agenda.js'
-import { MOTIVOS } from '../../lib/constantes.js'
+import { MOTIVOS, linkWhatsApp } from '../../lib/constantes.js'
 import { temporadaAtual } from '../../lib/temporadas.js'
 import { useCollection } from '../../lib/useCollection.js'
 import SeletorTemporada from '../../components/SeletorTemporada.jsx'
@@ -39,6 +39,7 @@ export default function Agenda() {
   const trocarMando = (j) => updateDoc(doc(db, 'jogos', j.id), { mando: j.mando === 'casa' ? 'fora' : 'casa', atualizadoEm: serverTimestamp() })
 
   const alertas = [
+    ...a.times.filter((t) => t.total && t.situacao === 'parado').map((t) => `${t.nome} está marcado, mas consta como time parado.`),
     ...a.times.filter((t) => t.total && t.situacao === 'nao_marcar').map((t) => `${t.nome} está marcado, mas consta como "não marcar" (${t.motivos.map((m) => MOTIVOS[m]).join(', ') || 'sem motivo'}).`),
     ...a.times.filter((t) => t.estado === 'mando_repetido').map((t) => `${t.nome} tem os dois jogos ${t.casa.length ? 'em casa' : 'fora'}: ${[...t.casa, ...t.fora].map((j) => curto(j.data)).join(' e ')}.`),
     ...a.times.filter((t) => t.estado === 'mais').map((t) => `${t.nome} tem ${t.total} jogos marcados.`),
@@ -48,7 +49,7 @@ export default function Agenda() {
   const timesFiltrados = a.times
     .filter((t) => (filtroTimes === 'pendentes' ? ['falta_casa', 'falta_fora', 'mando_repetido', 'mais'].includes(t.estado)
       : filtroTimes === 'completos' ? t.estado === 'completo'
-      : filtroTimes === 'sem' ? t.estado === 'nenhum' && t.situacao !== 'nao_marcar'
+      : filtroTimes === 'sem' ? t.estado === 'nenhum' && !['nao_marcar', 'parado'].includes(t.situacao)
       : true))
     .sort((x, y) => y.total - x.total || x.nome.localeCompare(y.nome, 'pt-BR'))
 
@@ -147,7 +148,13 @@ export default function Agenda() {
                         {[...t.casa.map((j) => `${curto(j.data)} em casa`), ...t.fora.map((j) => `${curto(j.data)} fora`)].join(', ')}
                       </p>
                     )}
-                    {t.situacao !== 'nao_marcar' && t.total < 2 && (
+                    {(t.contatoNome || t.contatoTelefone) && (
+                      <p className="mt-0.5 text-sm">
+                        Contato: {t.contatoNome}{t.contatoNome && t.contatoTelefone ? ', ' : ''}
+                        {t.contatoTelefone && <a href={linkWhatsApp(t.contatoTelefone)} target="_blank" rel="noreferrer" className="font-semibold text-liberado underline">{t.contatoTelefone}</a>}
+                      </p>
+                    )}
+                    {!['nao_marcar', 'parado'].includes(t.situacao) && t.total < 2 && (
                       <button onClick={() => setTimeAberto(timeAberto === t.id ? null : t.id)} aria-expanded={timeAberto === t.id}
                         className="mt-1 text-sm font-semibold text-sangue-escuro">
                         {timeAberto === t.id ? 'Fechar datas' : 'Ver datas livres que servem ›'}

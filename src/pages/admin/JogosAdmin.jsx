@@ -149,7 +149,7 @@ export default function JogosAdmin() {
           {alerta && (
             <div className={`rounded-md border-l-4 p-3 sm:col-span-3 ${alerta.situacao === 'nao_marcar' ? 'border-bloqueado bg-bloqueado/10' : 'border-cautela bg-cautela/10'}`} role="alert">
               <p className="font-semibold">Atenção: esse time está marcado como "{SITUACOES[alerta.situacao].rotulo}".</p>
-              <p className="text-sm">Motivo: {(alerta.motivos || []).map((m) => MOTIVOS[m]).join(', ') || 'não informado'}.</p>
+              {(alerta.motivos || []).length > 0 && <p className="text-sm">Motivo: {alerta.motivos.map((m) => MOTIVOS[m]).join(', ')}.</p>}
               {alerta.observacao && <p className="text-sm italic">{alerta.observacao}</p>}
             </div>
           )}

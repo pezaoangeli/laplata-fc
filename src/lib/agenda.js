@@ -40,6 +40,8 @@ export function analisarAgenda({ jogos, adversarios, privados }) {
       ...a,
       situacao: priv.situacao || 'liberado',
       motivos: priv.motivos || [],
+      contatoNome: priv.contatoNome || '',
+      contatoTelefone: priv.contatoTelefone || '',
       casa: p.casa,
       fora: p.fora,
       total: p.casa.length + p.fora.length,
@@ -74,7 +76,7 @@ const distanciaAteOutro = (t, data) => {
 // Entre eles, liberados antes de "com cautela" e quem fica mais longe do outro jogo.
 export function sugestoesParaData(livre, times) {
   return times
-    .filter((t) => t.situacao !== 'nao_marcar' && precisaDoMando(t, livre.mando))
+    .filter((t) => !['nao_marcar', 'parado'].includes(t.situacao) && precisaDoMando(t, livre.mando))
     .map((t) => ({ ...t, distancia: distanciaAteOutro(t, livre.data) }))
     .sort((a, b) =>
       (b.total === 1) - (a.total === 1) ||

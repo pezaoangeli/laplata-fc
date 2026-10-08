@@ -107,9 +107,59 @@ async function importarJogos(lista) {
   return { criados, ignorados: lista.length - criados, faltando }
 }
 
+// Recebe uma lista colada pelo admin (nunca fica no código do site).
+// Time existente (mesmo nome): atualiza só os campos informados. Time novo: é criado.
+async function importarControle(lista) {
+  const advs = (await getDocs(collection(db, 'adversarios'))).docs.map((d) => ({ id: d.id, ...d.data() }))
+  const porNome = Object.fromEntries(advs.map((a) => [(a.nome || '').toLowerCase(), a.id]))
+  const lote = writeBatch(db)
+  const agora = serverTimestamp()
+  const res = { atualizados: [], criados: [] }
+  for (const item of lista) {
+    const nome = (item.nome || '').trim()
+    if (!nome) continue
+    let id = porNome[nome.toLowerCase()]
+    const publico = { atualizadoEm: agora }
+    if (item.cidade) publico.cidade = item.cidade
+    if (!id) {
+      id = doc(collection(db, 'adversarios')).id
+      lote.set(doc(db, 'adversarios', id), { nome, cidade: item.cidade || '', atualizadoEm: agora })
+      res.criados.push(nome)
+    } else {
+      lote.set(doc(db, 'adversarios', id), publico, { merge: true })
+      res.atualizados.push(nome)
+    }
+    const priv = { atualizadoEm: agora }
+    for (const c of ['situacao', 'motivos', 'observacao', 'contatoNome', 'contatoTelefone'])
+      if (item[c] !== undefined) priv[c] = item[c]
+    lote.set(doc(db, 'adversariosPrivado', id), { situacao: 'liberado', motivos: [], ...priv }, { merge: true })
+  }
+  await lote.commit()
+  return res
+}
+
 export default function Importar() {
   const [estado, setEstado] = useState('parado') // parado | importando | feito | erro
   const [resultado, setResultado] = useState(null)
+  const [textoControle, setTextoControle] = useState('')
+  const [estadoCtrl, setEstadoCtrl] = useState('')
+  async function rodarControle() {
+    let lista
+    try {
+      lista = JSON.parse(textoControle)
+      if (!Array.isArray(lista)) throw new Error()
+    } catch {
+      return setEstadoCtrl('O texto colado não está no formato esperado. Copie de novo, inteiro, o bloco que recebeu.')
+    }
+    setEstadoCtrl('importando')
+    try {
+      const r = await importarControle(lista)
+      setEstadoCtrl(`Pronto: ${r.atualizados.length} times atualizados${r.criados.length ? ` e ${r.criados.length} criados (${r.criados.join(', ')})` : ''}.`)
+      setTextoControle('')
+    } catch {
+      setEstadoCtrl('A importação falhou. Confira se você está logada com uma conta admin.')
+    }
+  }
   const [estado27, setEstado27] = useState('parado')
   const [res27, setRes27] = useState(null)
   async function rodar27() {
@@ -217,6 +267,22 @@ export default function Importar() {
       {estado27 === 'erro' && (
         <p className="mt-4 font-semibold text-sangue-escuro" role="alert">A importação falhou. Confira se você está logada com uma conta admin e tente de novo.</p>
       )}
+
+      <hr className="my-8 border-linha" />
+
+      <h2 className="font-display text-3xl font-bold">Controle de adversários (colar dados)</h2>
+      <p className="mt-2">
+        Para cadastrar vários times de uma vez, com situação, motivos, observação e contato. Cole o bloco de dados e importe.
+        Esses dados vão direto para a parte do banco que só admins leem e não ficam no código do site.
+      </p>
+      <textarea rows={6} className="campo mt-3 font-mono text-xs" value={textoControle} onChange={(e) => { setTextoControle(e.target.value); setEstadoCtrl('') }}
+        placeholder='[{"nome": "Time", "situacao": "nao_marcar", "motivos": ["briga"], "contatoNome": "Fulano", "contatoTelefone": "999999999"}]'
+        aria-label="Dados dos adversários" />
+      <button onClick={rodarControle} disabled={!textoControle.trim() || estadoCtrl === 'importando'}
+        className="mt-3 rounded-md bg-sangue px-5 py-2.5 font-display text-xl font-bold text-papel hover:bg-sangue-escuro disabled:opacity-60">
+        {estadoCtrl === 'importando' ? 'Importando…' : 'Importar controle'}
+      </button>
+      {estadoCtrl && estadoCtrl !== 'importando' && <p className="mt-3" role="status">{estadoCtrl}</p>}
     </div>
   )
 }
