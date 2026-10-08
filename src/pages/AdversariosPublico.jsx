@@ -20,7 +20,7 @@ export default function AdversariosPublico() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="font-display text-5xl font-extrabold">Adversários</h1>
-      <p className="text-texto-suave">Retrospecto contra cada time, somando todas as temporadas.</p>
+      <p className="text-texto-suave">Retrospecto contra cada time, somando todas as temporadas. Toque no time para ver os jogos.</p>
       {carregando ? <p className="mt-6 text-texto-suave">Carregando…</p> : (
         <ul className="mt-5 divide-y divide-linha rounded-lg border border-linha">
           {lista.map((a) => (
@@ -38,6 +38,7 @@ export default function AdversariosPublico() {
                   <span className="rounded bg-texto-suave px-2 text-papel">{a.E}E</span>
                   <span className="rounded bg-sangue px-2 text-papel">{a.D}D</span>
                 </span>
+                <span aria-hidden="true" className={`text-xl text-texto-suave transition-transform ${aberto === a.id ? 'rotate-90' : ''}`}>›</span>
               </button>
               {aberto === a.id && (
                 <ul className="bg-cimento px-3 py-2">

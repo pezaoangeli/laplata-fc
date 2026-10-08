@@ -1,4 +1,4 @@
-export const POSICOES = ['Goleiro', 'Defesa', 'Meio-campo', 'Ataque']
+export const POSICOES = ['Goleiro', 'Defesa', 'Ala', 'Meio-campo', 'Ataque']
 
 export const SITUACOES = {
   liberado: { rotulo: 'Liberado', cor: 'bg-liberado' },

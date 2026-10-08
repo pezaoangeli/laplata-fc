@@ -40,12 +40,12 @@ function Grade({ itens, stats }) {
         const s = stats[j.id] || {}
         return (
           <li key={j.id}>
-            <Link to={`/elenco/${j.id}`} className="block h-full overflow-hidden rounded-lg border-2 border-preto hover:bg-cimento">
+            <Link to={`/elenco/${j.id}`} className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-preto transition-colors hover:border-sangue hover:bg-cimento">
               <div className="flex items-center justify-between bg-preto px-3 py-2">
                 <span className="truncate font-display text-xl font-bold text-papel">{j.nome}</span>
               </div>
               <p className="px-3 pt-1 text-sm text-texto-suave">{j.posicao || '\u00a0'}</p>
-              <dl className="grid grid-cols-3 px-1 pb-2 text-center">
+              <dl className="mt-auto grid grid-cols-3 px-1 pb-2 text-center">
                 {[['Jogos', s.jogos], ['Gols', s.gols], ['Assist.', s.assist]].map(([r, v]) => (
                   <div key={r}>
                     <dd className="font-display text-2xl font-bold tabular-nums">{v || 0}</dd>
@@ -53,6 +53,9 @@ function Grade({ itens, stats }) {
                   </div>
                 ))}
               </dl>
+              <p className="flex items-center justify-between border-t border-linha px-3 py-1.5 text-sm font-semibold text-sangue-escuro">
+                Ver detalhes <span aria-hidden="true">›</span>
+              </p>
             </Link>
           </li>
         )

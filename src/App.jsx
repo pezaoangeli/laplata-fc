@@ -30,7 +30,7 @@ export default function App() {
         <Route path="elenco" element={<Elenco />} />
         <Route path="elenco/:id" element={<JogadorDetalhe />} />
         <Route path="adversarios" element={<AdversariosPublico />} />
-        <Route path="premiacoes" element={<Premiacoes />} />
+        <Route path="premiacoes" element={<AdminRoute><Premiacoes /></AdminRoute>} />
         <Route path="entrar" element={<Login />} />
         <Route
           path="admin"

@@ -8,7 +8,7 @@ const SECOES = [
   { to: '/numeros', rotulo: 'Números' },
   { to: '/elenco', rotulo: 'Elenco' },
   { to: '/adversarios', rotulo: 'Adversários' },
-  { to: '/premiacoes', rotulo: 'Premiações' },
+  { to: '/premiacoes', rotulo: 'Premiações', soAdmin: true },
 ]
 
 const linkSecao = ({ isActive }) =>
@@ -37,7 +37,7 @@ export default function Layout() {
           </div>
         </div>
         <nav className="mx-auto flex max-w-5xl overflow-x-auto px-1 pb-1" aria-label="Seções do site">
-          {SECOES.map((s) => <NavLink key={s.to} to={s.to} end={s.end} className={linkSecao}>{s.rotulo}</NavLink>)}
+          {SECOES.filter((s) => !s.soAdmin || isAdmin).map((s) => <NavLink key={s.to} to={s.to} end={s.end} className={linkSecao}>{s.rotulo}</NavLink>)}
         </nav>
       </header>
 

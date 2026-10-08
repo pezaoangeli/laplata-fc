@@ -30,14 +30,14 @@ export default function JogadorDetalhe() {
       <Link to="/elenco" className="text-sm font-semibold text-texto-suave hover:text-preto">Voltar para o elenco</Link>
       <h1 className="mt-2 font-display text-5xl font-extrabold">{jogador.nome}</h1>
       <p className="text-texto-suave">
-        {[jogador.posicao, jogador.tipo === 'convidado' ? 'Convidado' : 'Fixo', jogador.ativo === false ? 'inativo' : null].filter(Boolean).join(', ')}
+        {[jogador.posicao || 'Posição não informada', jogador.tipo === 'convidado' ? 'convidado' : null, jogador.ativo === false ? 'inativo' : null].filter(Boolean).join(', ')}
       </p>
 
       <dl className="mt-5 grid grid-cols-5 gap-px overflow-hidden rounded-lg border-2 border-preto bg-preto text-center">
-        {[['Jogos', total.jogos], ['Gols', total.gols], ['Assist.', total.assist], ['G+A', total.ga], ['Melhor', total.melhores]].map(([r, v]) => (
+        {[['Jogos', total.jogos], ['Gols', total.gols], ['Assist.', total.assist], ['G+A', total.ga], ['Melhor em campo', total.melhores]].map(([r, v]) => (
           <div key={r} className="bg-papel py-2">
             <dd className="font-display text-3xl font-bold tabular-nums">{v || 0}</dd>
-            <dt className="text-xs text-texto-suave">{r}</dt>
+            <dt className="px-1 text-xs leading-tight text-texto-suave">{r}</dt>
           </div>
         ))}
       </dl>

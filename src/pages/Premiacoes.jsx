@@ -25,7 +25,8 @@ export default function Premiacoes() {
         <h1 className="font-display text-5xl font-extrabold">Premiações</h1>
         <SeletorTemporada valor={temporada} onChange={setTemporada} />
       </div>
-      <p className="mt-1 text-texto-suave">Calculadas a partir das súmulas. Valem só os fixos, a não ser que você inclua os convidados.</p>
+      <p className="mt-1 rounded bg-cautela/10 px-2 py-1 text-sm font-semibold text-cautela">Visível só para admins até a divulgação no churrasco.</p>
+      <p className="mt-2 text-texto-suave">Calculadas a partir das súmulas. Valem só os fixos, a não ser que você inclua os convidados.</p>
       <label className="mt-2 flex items-center gap-2 text-sm">
         <input type="checkbox" checked={convidados} onChange={(e) => setConvidados(e.target.checked)} />
         Incluir convidados

@@ -31,41 +31,42 @@ export default function Inicio() {
 
   return (
     <>
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 grid grid-cols-2" aria-hidden="true">
-          <div className="bg-papel" />
-          <div className="bg-sangue" />
-        </div>
-        <div className="relative mx-auto flex max-w-5xl flex-col items-center px-4 py-10 text-center sm:py-14">
-          <Escudo className="h-32 w-32 rounded-full bg-papel p-2 shadow-[0_0_0_6px_#000] sm:h-44 sm:w-44" />
-          <h1 className="mt-6 font-display text-6xl font-extrabold uppercase leading-none sm:text-8xl">
-            <span className="text-preto">La </span>
-            <span className="text-papel [text-shadow:0_2px_0_#000]">Plata</span>
-          </h1>
-          <p className="mt-3 rounded bg-preto px-3 py-1 font-display text-xl font-semibold text-papel">Futebol Clube, Sapiranga-RS</p>
+      {/* Topo preto: escudo e nome, sem cruzar a divisão branco/vermelho */}
+      <section className="bg-preto text-papel">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4 px-4 py-8 text-center sm:flex-row sm:justify-center sm:gap-8 sm:py-10 sm:text-left">
+          <Escudo className="h-32 w-32 shrink-0 rounded-full bg-papel p-2 sm:h-40 sm:w-40" />
+          <div>
+            <h1 className="font-display text-6xl font-extrabold uppercase leading-[0.85] sm:text-8xl">La Plata</h1>
+            <p className="mt-2 font-display text-xl font-bold uppercase tracking-[0.15em] text-[#E3262C] sm:text-2xl">Futebol Clube</p>
+            <p className="mt-1 text-sm text-papel/70">Sapiranga-RS, desde 2022</p>
+          </div>
         </div>
       </section>
+      <div className="grid h-2.5 grid-cols-2" aria-hidden="true">
+        <div className="bg-papel" />
+        <div className="bg-sangue" />
+      </div>
+
+      {/* Próximo jogo, colado no topo */}
+      <Link to="/jogos" className="block border-b border-linha hover:bg-cimento">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3">
+          <span className="rounded bg-sangue px-2.5 py-0.5 font-display text-base font-bold uppercase tracking-wide text-papel">Próximo jogo</span>
+          {proximo ? (
+            <>
+              <span className="font-display text-3xl font-extrabold leading-none">{adversarios[proximo.adversarioId]?.nome || 'Adversário a definir'}</span>
+              <span className="text-texto-suave">
+                {formatarData(proximo.data)}{proximo.horario ? `, ${proximo.horario.replace(':00', 'h')}` : ''}, {proximo.mando === 'casa' ? 'em casa' : 'fora'}
+                {locais[proximo.localId] ? `, ${locais[proximo.localId].nome}` : ''}
+              </span>
+            </>
+          ) : <span className="text-texto-suave">Nenhum jogo agendado.</span>}
+          <span className="ml-auto text-sm font-semibold text-sangue-escuro">Calendário <span aria-hidden="true">›</span></span>
+        </div>
+      </Link>
 
       <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 md:grid-cols-2">
-        {/* Próximo jogo */}
-        <section className="overflow-hidden rounded-lg border-2 border-preto">
-          <h2 className="bg-preto px-4 py-2 font-display text-2xl font-bold text-papel">Próximo jogo</h2>
-          {proximo ? (
-            <div className="px-4 py-4">
-              <p className="font-display text-4xl font-extrabold leading-tight">{adversarios[proximo.adversarioId]?.nome || 'Adversário a definir'}</p>
-              <p className="mt-1 text-lg">
-                {formatarData(proximo.data)}{proximo.horario ? `, ${proximo.horario.replace(':00', 'h')}` : ''}
-              </p>
-              <p className="text-texto-suave">
-                {proximo.mando === 'casa' ? 'Em casa' : 'Fora'}{locais[proximo.localId] ? `, ${locais[proximo.localId].nome}` : ''}
-              </p>
-            </div>
-          ) : <p className="px-4 py-4 text-texto-suave">Nenhum jogo agendado.</p>}
-          <Link to="/jogos" className="block border-t border-linha px-4 py-2 text-sm font-semibold hover:bg-cimento">Ver calendário completo</Link>
-        </section>
-
         {/* Último resultado */}
-        <section className="overflow-hidden rounded-lg border-2 border-preto">
+        <section className="overflow-hidden rounded-lg border-2 border-preto md:col-span-2">
           <h2 className="bg-sangue px-4 py-2 font-display text-2xl font-bold text-papel">Último resultado</h2>
           {ultimo ? (
             <Link to={`/jogos/${ultimo.id}`} className="block px-4 py-4 hover:bg-cimento">
@@ -74,7 +75,7 @@ export default function Inicio() {
                 <span className={`${CORES_RESULTADO[resultado(ultimo.placar)]} rounded px-2 py-0.5 font-display text-xl font-bold`}>{resultado(ultimo.placar)}</span>
               </div>
               <p className="mt-1 text-lg">contra {adversarios[ultimo.adversarioId]?.nome || 'adversário'}, {formatarData(ultimo.data)}</p>
-              <p className="text-sm font-semibold text-texto-suave">Ver súmula</p>
+              <p className="text-sm font-semibold text-sangue-escuro">Ver súmula <span aria-hidden="true">›</span></p>
             </Link>
           ) : <p className="px-4 py-4 text-texto-suave">Nenhum jogo com súmula ainda.</p>}
         </section>
