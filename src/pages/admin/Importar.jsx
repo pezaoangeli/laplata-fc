@@ -4,6 +4,7 @@ import { db } from '../../firebase.js'
 import { ADVERSARIOS, JOGADORES, LOCAIS } from '../../data/seed.js'
 import { JOGOS_2026 } from '../../data/jogos2026.js'
 import { JOGOS_2027 } from '../../data/jogos2027.js'
+import { CANCELADOS, CONVIDADOS_NOVOS, CORRECOES_MELHOR, SUMULAS } from '../../data/sumulasGrupo2026.js'
 
 // Adiciona só o que ainda não existe (compara pelo nome), então pode ser rodado mais de uma vez sem duplicar.
 async function importarCadastros() {
@@ -138,9 +139,99 @@ async function importarControle(lista) {
   return res
 }
 
+// Aplica as súmulas tiradas do grupo. Não mexe em jogos que já foram lançados pelo site (status "realizado"),
+// exceto para preencher melhor em campo que estava vazio.
+async function importarSumulasGrupo() {
+  const ler = async (c) => (await getDocs(collection(db, c))).docs.map((d) => ({ id: d.id, ...d.data() }))
+  const [jogadores, adversarios, locais, jogos] = await Promise.all([ler('jogadores'), ler('adversarios'), ler('locais'), ler('jogos')])
+  const mapa = (lista) => Object.fromEntries(lista.map((i) => [(i.nome || '').toLowerCase(), i.id]))
+  const idJog = mapa(jogadores), idAdv = mapa(adversarios), idLoc = mapa(locais)
+  const porId = Object.fromEntries(jogos.map((j) => [j.id, j]))
+  const lote = writeBatch(db)
+  const agora = serverTimestamp()
+  const res = { sumulas: 0, cancelados: 0, corrigidos: 0, pulados: [], criados: [] }
+
+  for (const c of CONVIDADOS_NOVOS) {
+    if (idJog[c.nome.toLowerCase()]) continue
+    const ref = doc(collection(db, 'jogadores'))
+    lote.set(ref, { nome: c.nome, posicao: c.posicao, tipo: 'convidado', ativo: true, criadoEm: agora, atualizadoEm: agora })
+    idJog[c.nome.toLowerCase()] = ref.id
+    res.criados.push(c.nome)
+  }
+  const jog = (nome) => {
+    const k = nome.toLowerCase()
+    if (!idJog[k]) {
+      const ref = doc(collection(db, 'jogadores'))
+      lote.set(ref, { nome, posicao: '', tipo: 'convidado', ativo: true, criadoEm: agora, atualizadoEm: agora })
+      idJog[k] = ref.id
+      res.criados.push(nome)
+    }
+    return idJog[k]
+  }
+  // Procura pelo primeiro nome da lista que existir; se nenhum existir, cria com o primeiro
+  const achar = (nomes, ids, colecao, extra) => {
+    for (const n of nomes) if (ids[n.toLowerCase()]) return ids[n.toLowerCase()]
+    const ref = doc(collection(db, colecao))
+    lote.set(ref, { nome: nomes[0], cidade: '', ...extra, atualizadoEm: agora })
+    if (colecao === 'adversarios')
+      lote.set(doc(db, 'adversariosPrivado', ref.id), { situacao: 'liberado', motivos: [], observacao: '', atualizadoEm: agora })
+    ids[nomes[0].toLowerCase()] = ref.id
+    res.criados.push(nomes[0])
+    return ref.id
+  }
+  const mapaIds = (m) => Object.fromEntries(Object.entries(m).map(([n, v]) => [jog(n), v]))
+
+  for (const s of SUMULAS) {
+    const id = `imp-${s.data}`
+    const atual = porId[id]
+    if (atual?.status === 'realizado') { res.pulados.push(s.data); continue }
+    const dados = {
+      data: s.data, temporada: 2026, tipo: 'jogo', titulo: '', status: 'realizado',
+      adversarioId: achar(s.adversario, idAdv, 'adversarios', {}),
+      localId: achar(s.local, idLoc, 'locais', {}),
+      placar: { nos: s.placar[0], eles: s.placar[1] },
+      sumula: {
+        presentes: s.presentes.map(jog), gols: mapaIds(s.gols), assistencias: mapaIds(s.assistencias),
+        melhores: s.melhores.map(jog), uniforme: atual?.sumula?.uniforme || [], agua: atual?.sumula?.agua || [],
+      },
+      atualizadoEm: agora,
+    }
+    if (s.horario) dados.horario = s.horario
+    if (!atual) Object.assign(dados, { mando: 'casa', horario: s.horario || '', criadoEm: agora })
+    lote.set(doc(db, 'jogos', id), dados, { merge: true })
+    res.sumulas++
+  }
+  for (const data of CANCELADOS) {
+    const atual = porId[`imp-${data}`]
+    if (!atual || atual.status !== 'agendado') continue
+    lote.update(doc(db, 'jogos', atual.id), { status: 'cancelado', atualizadoEm: agora })
+    res.cancelados++
+  }
+  for (const [data, nomes] of Object.entries(CORRECOES_MELHOR)) {
+    const atual = porId[`imp-${data}`]
+    if (!atual?.sumula || (atual.sumula.melhores || []).length) continue
+    lote.update(doc(db, 'jogos', atual.id), { 'sumula.melhores': nomes.map(jog), atualizadoEm: agora })
+    res.corrigidos++
+  }
+  await lote.commit()
+  return res
+}
+
 export default function Importar() {
   const [estado, setEstado] = useState('parado') // parado | importando | feito | erro
   const [resultado, setResultado] = useState(null)
+  const [estadoGrupo, setEstadoGrupo] = useState('')
+  async function rodarGrupo() {
+    setEstadoGrupo('importando')
+    try {
+      const r = await importarSumulasGrupo()
+      setEstadoGrupo(`Pronto: ${r.sumulas} súmulas lançadas, ${r.cancelados} jogos cancelados e ${r.corrigidos} melhores em campo corrigidos.`
+        + (r.criados.length ? ` Cadastrados: ${r.criados.join(', ')}.` : '')
+        + (r.pulados.length ? ` Já tinham súmula no site e não foram alterados: ${r.pulados.join(', ')}.` : ''))
+    } catch {
+      setEstadoGrupo('A importação falhou. Confira se você está logada com uma conta admin.')
+    }
+  }
   const [textoControle, setTextoControle] = useState('')
   const [estadoCtrl, setEstadoCtrl] = useState('')
   async function rodarControle() {
@@ -283,6 +374,19 @@ export default function Importar() {
         {estadoCtrl === 'importando' ? 'Importando…' : 'Importar controle'}
       </button>
       {estadoCtrl && estadoCtrl !== 'importando' && <p className="mt-3" role="status">{estadoCtrl}</p>}
+
+      <hr className="my-8 border-linha" />
+
+      <h2 className="font-display text-3xl font-bold">Súmulas do grupo (maio a outubro de 2026)</h2>
+      <p className="mt-2">
+        Lança as {SUMULAS.length} súmulas de 23/05 a 03/10 tiradas da conversa do WhatsApp, marca {CANCELADOS.length} jogos como cancelados
+        e completa o melhor em campo de 07/03 e 21/03. Jogos que já têm súmula lançada no site não são alterados.
+      </p>
+      <button onClick={rodarGrupo} disabled={estadoGrupo === 'importando'}
+        className="mt-5 rounded-md bg-sangue px-5 py-2.5 font-display text-xl font-bold text-papel hover:bg-sangue-escuro disabled:opacity-60">
+        {estadoGrupo === 'importando' ? 'Importando…' : 'Importar súmulas do grupo'}
+      </button>
+      {estadoGrupo && estadoGrupo !== 'importando' && <p className="mt-3" role="status">{estadoGrupo}</p>}
     </div>
   )
 }
