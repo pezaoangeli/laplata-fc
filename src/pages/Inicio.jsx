@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Escudo from '../components/Escudo.jsx'
 import { CORES_RESULTADO, formatarData, hojeISO, nomeConfronto, porId, resultado, useTodosJogos } from '../lib/jogos.js'
-import { campanha, estatisticasJogadores, filaRodizio, lideres, realizados } from '../lib/estatisticas.js'
+import { campanha, estatisticasJogadores, lideres, realizados } from '../lib/estatisticas.js'
 import { temporadaAtual } from '../lib/temporadas.js'
 import { useCollection } from '../lib/useCollection.js'
 
@@ -25,9 +25,6 @@ export default function Inicio() {
     ['Assistências', lideres(lista, 'assist'), 'assist'],
     ['Melhor em campo', lideres(lista, 'melhores'), 'melhores'],
   ]
-  const fixosAtivos = listaJogadores.filter((j) => j.tipo !== 'convidado' && j.ativo !== false)
-  const filaUniforme = filaRodizio(fixosAtivos, stats, 'uniforme', 'ultimoUniforme').slice(0, 3)
-  const filaAgua = filaRodizio(fixosAtivos, stats, 'agua', 'ultimaAgua').slice(0, 3)
 
   return (
     <>
@@ -110,28 +107,6 @@ export default function Inicio() {
           </ul>
         </section>
 
-        {/* Rodízio */}
-        <section className="md:col-span-2">
-          <h2 className="font-display text-3xl font-bold">Rodízio</h2>
-          <p className="text-sm text-texto-suave">Quem fez menos vezes na temporada vem primeiro. Empate: quem fez há mais tempo.</p>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            {[['Uniforme', filaUniforme], ['Água', filaAgua]].map(([titulo, fila]) => (
-              <div key={titulo} className="rounded-lg border border-linha px-4 py-3">
-                <p className="font-display text-xl font-bold">{titulo}</p>
-                <ol className="mt-1 space-y-1">
-                  {fila.map((j, i) => (
-                    <li key={j.id} className="flex justify-between gap-2">
-                      <span className={i === 0 ? 'font-bold' : ''}>{i === 0 ? `Próximo: ${j.nome}` : j.nome}</span>
-                      <span className="text-sm text-texto-suave">
-                        {j.vezes ? `${j.vezes}x, última em ${formatarData(j.ultima, { diaSemana: false })}` : 'ainda não fez'}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </div>
-        </section>
       </div>
     </>
   )

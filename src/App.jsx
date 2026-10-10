@@ -20,6 +20,7 @@ import Sumula from './pages/admin/Sumula.jsx'
 import PremiacoesAdmin from './pages/admin/PremiacoesAdmin.jsx'
 import Agenda from './pages/admin/Agenda.jsx'
 import Backup from './pages/admin/Backup.jsx'
+import Rodizio from './pages/admin/Rodizio.jsx'
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="jogos" element={<JogosAdmin />} />
           <Route path="jogos/:id/sumula" element={<Sumula />} />
           <Route path="agenda" element={<Agenda />} />
+          <Route path="rodizio" element={<Rodizio />} />
           <Route path="jogadores" element={<Jogadores />} />
           <Route path="adversarios" element={<Adversarios />} />
           <Route path="locais" element={<Locais />} />
