@@ -25,6 +25,18 @@ export const rotuloCategoria = (tipo, cat) => CATEGORIAS[tipo]?.[cat] || cat
 export const moeda = (v) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 export const arred = (v) => Math.round((v || 0) * 100) / 100
 
+// Lê valores como "3.107,02", "3107,02", "3107.02" ou "R$ 40". Vazio = null; inválido = NaN.
+export function lerValor(texto) {
+  if (texto === '' || texto == null) return null
+  if (typeof texto === 'number') return texto
+  let s = String(texto).replace(/R\$|\s/g, '')
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.')
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
+  return s === '' ? null : Number(s)
+}
+// Número para mostrar num campo de texto, no formato brasileiro
+export const paraCampo = (v) => (v == null || Number.isNaN(v) ? '' : String(v).replace('.', ','))
+
 // Mês de uma mensalidade já venceu? Vence no dia "dia" do próprio mês.
 export function venceu(ano, mes, dia, hoje = new Date()) {
   const a = hoje.getFullYear(), m = hoje.getMonth() + 1, d = hoje.getDate()

@@ -4,7 +4,7 @@ import {
   setDoc, updateDoc, where, writeBatch,
 } from 'firebase/firestore'
 import { db } from '../../firebase.js'
-import { CATEGORIAS, MESES_CURTOS, calcular, moeda, publicarTransparencia, rotuloCategoria, situacaoCelula, venceu } from '../../lib/financeiro.js'
+import { CATEGORIAS, MESES_CURTOS, calcular, lerValor, moeda, paraCampo, publicarTransparencia, rotuloCategoria, situacaoCelula, venceu } from '../../lib/financeiro.js'
 import { temporadaAtual } from '../../lib/temporadas.js'
 import { useCollection } from '../../lib/useCollection.js'
 import SeletorTemporada from '../../components/SeletorTemporada.jsx'
@@ -77,7 +77,7 @@ function Cartao({ titulo, valor, detalhe, destaque }) {
 function Resumo({ r, config, jogadores, mensalidades }) {
   const nomes = Object.fromEntries(jogadores.map((j) => [j.id, j.nome]))
   const devedores = Object.entries(r.porJogador).filter(([, p]) => p.aberto > 0).sort((a, b) => b[1].aberto - a[1].aberto)
-  const diferenca = config.saldoBanco != null ? config.saldoBanco - r.saldoConta : null
+  const diferenca = typeof config.saldoBanco === 'number' && !Number.isNaN(config.saldoBanco) ? config.saldoBanco - r.saldoConta : null
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -210,7 +210,7 @@ function Mensalidades({ ano, r, mensalidades, jogadores }) {
                   const ativo = sel?.id === l.id && sel?.mes === mes
                   return (
                     <td key={mes} className="px-0.5 py-1">
-                      <button onClick={() => { setSel({ id: l.id, mes }); setValor(c?.valor ?? r.valor) }}
+                      <button onClick={() => { setSel({ id: l.id, mes }); setValor(paraCampo(c?.valor ?? r.valor)) }}
                         aria-label={`${l.nome}, ${MESES_CURTOS[i]}`}
                         className={`h-8 w-11 rounded text-xs font-semibold tabular-nums ${ESTILO_CELULA[sit]} ${ativo ? 'ring-2 ring-preto' : ''}`}>
                         {c?.isento ? 'DM' : c?.valor ? c.valor : sit === 'atrasado' ? '!' : ''}
@@ -233,9 +233,9 @@ function Mensalidades({ ano, r, mensalidades, jogadores }) {
               className="rounded-md bg-liberado px-3 py-2 font-semibold text-papel">Pago {moeda(r.valor)}</button>
             <label className="flex items-center gap-1">
               <span className="text-sm">Outro valor</span>
-              <input type="number" min="0" step="0.01" className="campo w-24" value={valor} onChange={(e) => setValor(e.target.value)} />
+              <input inputMode="decimal" className="campo w-24" value={valor} onChange={(e) => setValor(e.target.value)} />
             </label>
-            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: Number(valor) || 0, data: new Date().toISOString().slice(0, 10) })}
+            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: lerValor(valor) || 0, data: new Date().toISOString().slice(0, 10) })}
               className="rounded-md bg-preto px-3 py-2 font-semibold text-papel">Salvar valor</button>
             <button onClick={() => salvarCelula(sel.id, sel.mes, { isento: true })} className="rounded-md border-2 border-preto px-3 py-2 font-semibold">Isento (DM)</button>
             <button onClick={() => salvarCelula(sel.id, sel.mes, null)} className="px-3 py-2 font-semibold text-sangue-escuro">Limpar</button>
@@ -283,8 +283,9 @@ function Lancamentos({ ano, lancamentos }) {
 
   async function salvar(e) {
     e.preventDefault()
-    const valor = Number(String(form.valor).replace(',', '.'))
-    if (!form.data || !valor || !form.descricao.trim()) return setErro('Preencha data, descrição e valor.')
+    const valor = lerValor(form.valor)
+    if (!form.data || !form.descricao.trim()) return setErro('Preencha data e descrição.')
+    if (!valor || Number.isNaN(valor) || valor < 0) return setErro('Valor inválido. Use, por exemplo, 135 ou 1.250,50.')
     if (Number(form.data.slice(0, 4)) !== ano) return setErro(`A data precisa ser de ${ano}. Para outro ano, troque a temporada no topo.`)
     const dados = { ...form, valor, descricao: form.descricao.trim(), temporada: ano, atualizadoEm: serverTimestamp() }
     delete dados.id
@@ -367,7 +368,7 @@ function Lancamentos({ ano, lancamentos }) {
             </span>
             <span className="flex gap-1">
               {l.status !== 'pago' && <button onClick={() => marcarPago(l)} className="rounded bg-liberado px-2 py-1 text-sm font-semibold text-papel">{l.tipo === 'saida' ? 'Paguei' : 'Recebi'}</button>}
-              <button onClick={() => { setForm({ ...vazioLanc, ...l, valor: String(l.valor) }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
+              <button onClick={() => { setForm({ ...vazioLanc, ...l, valor: paraCampo(l.valor) }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
               <button onClick={() => excluir(l)} className="rounded px-2 py-1 text-sm font-semibold text-sangue-escuro hover:bg-cimento">Excluir</button>
             </span>
           </li>
@@ -380,18 +381,23 @@ function Lancamentos({ ano, lancamentos }) {
 
 function Config({ ano, config, r, jogadores }) {
   const [f, setF] = useState({
-    saldoInicial: config.saldoInicial ?? '', valorMensalidade: config.valorMensalidade ?? 40,
-    diaVencimento: config.diaVencimento ?? 10, saldoBanco: config.saldoBanco ?? '',
+    saldoInicial: paraCampo(config.saldoInicial), valorMensalidade: paraCampo(config.valorMensalidade ?? 40),
+    diaVencimento: config.diaVencimento ?? 10, saldoBanco: paraCampo(config.saldoBanco),
   })
   const [estado, setEstado] = useState('')
-  const num = (v) => (v === '' || v == null ? null : Number(String(v).replace(',', '.')))
 
   async function salvar() {
+    const v = { saldoInicial: lerValor(f.saldoInicial), valorMensalidade: lerValor(f.valorMensalidade), diaVencimento: lerValor(f.diaVencimento), saldoBanco: lerValor(f.saldoBanco) }
+    const invalidos = Object.entries(v).filter(([, x]) => Number.isNaN(x)).map(([k]) => ({
+      saldoInicial: 'saldo do ano anterior', valorMensalidade: 'valor da mensalidade', diaVencimento: 'dia de vencimento', saldoBanco: 'saldo do banco',
+    }[k]))
+    if (invalidos.length) return setEstado(`Não entendi o valor de: ${invalidos.join(', ')}. Use, por exemplo, 3.107,02.`)
     await salvarEPublicar(ano, () => setDoc(doc(db, 'financeiro', String(ano)), {
-      saldoInicial: num(f.saldoInicial) || 0, valorMensalidade: num(f.valorMensalidade) || 40,
-      diaVencimento: num(f.diaVencimento) || 10, saldoBanco: num(f.saldoBanco),
-      saldoBancoEm: num(f.saldoBanco) != null ? new Date().toISOString().slice(0, 10) : null, atualizadoEm: serverTimestamp(),
+      saldoInicial: v.saldoInicial || 0, valorMensalidade: v.valorMensalidade || 40,
+      diaVencimento: v.diaVencimento || 10, saldoBanco: v.saldoBanco,
+      saldoBancoEm: v.saldoBanco != null ? new Date().toISOString().slice(0, 10) : null, atualizadoEm: serverTimestamp(),
     }, { merge: true }))
+    setF({ ...f, saldoBanco: paraCampo(v.saldoBanco), saldoInicial: paraCampo(v.saldoInicial || 0) })
     setEstado('Configuração salva.')
   }
 
