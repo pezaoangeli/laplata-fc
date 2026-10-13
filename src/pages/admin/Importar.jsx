@@ -217,9 +217,113 @@ async function importarSumulasGrupo() {
   return res
 }
 
+// Histórico 2022-2025. O arquivo de dados só é carregado quando o botão é usado.
+async function importarHistorico() {
+  const { HISTORICO, FIXOS_ANTIGOS, GOLEIROS, PREMIOS_HISTORICOS } = await import('../../data/historico2022a2025.js')
+  const ler = async (c) => (await getDocs(collection(db, c))).docs.map((d) => ({ id: d.id, ...d.data() }))
+  const [jogadores, adversarios, locais, jogos, premiacoes] = await Promise.all([ler('jogadores'), ler('adversarios'), ler('locais'), ler('jogos'), ler('premiacoes')])
+  const mapa = (lista) => Object.fromEntries(lista.map((i) => [(i.nome || '').toLowerCase(), i.id]))
+  const idJog = mapa(jogadores), idAdv = mapa(adversarios), idLoc = mapa(locais)
+  const existentes = new Set(jogos.map((j) => j.id))
+  const agora = serverTimestamp()
+  const ops = []
+  const res = { jogos: 0, ignorados: 0, jogadores: [], adversarios: [], locais: [], premios: 0 }
+
+  const jog = (nome) => {
+    const k = nome.toLowerCase()
+    if (!idJog[k]) {
+      const ref = doc(collection(db, 'jogadores'))
+      ops.push(['set', ref, {
+        nome, posicao: GOLEIROS.includes(nome) ? 'Goleiro' : '', tipo: FIXOS_ANTIGOS.includes(nome) ? 'fixo' : 'convidado',
+        ativo: false, criadoEm: agora, atualizadoEm: agora,
+      }])
+      idJog[k] = ref.id
+      res.jogadores.push(nome)
+    }
+    return idJog[k]
+  }
+  const adv = (nome) => {
+    if (!nome) return null
+    const k = nome.toLowerCase()
+    if (!idAdv[k]) {
+      const ref = doc(collection(db, 'adversarios'))
+      ops.push(['set', ref, { nome, cidade: '', atualizadoEm: agora }])
+      ops.push(['set', doc(db, 'adversariosPrivado', ref.id), { situacao: 'liberado', motivos: [], observacao: '', atualizadoEm: agora }])
+      idAdv[k] = ref.id
+      res.adversarios.push(nome)
+    }
+    return idAdv[k]
+  }
+  const loc = (nome) => {
+    if (!nome) return null
+    const k = nome.toLowerCase()
+    if (!idLoc[k]) {
+      const ref = doc(collection(db, 'locais'))
+      ops.push(['set', ref, { nome, cidade: '', atualizadoEm: agora }])
+      idLoc[k] = ref.id
+      res.locais.push(nome)
+    }
+    return idLoc[k]
+  }
+  const ids = (m) => Object.fromEntries(Object.entries(m).map(([n, v]) => [jog(n), v]))
+
+  for (const j of HISTORICO) {
+    const id = `imp-${j.data}`
+    if (existentes.has(id)) { res.ignorados++; continue }
+    const base = {
+      data: j.data, temporada: Number(j.data.slice(0, 4)), horario: j.horario || '', mando: j.mando,
+      localId: loc(j.local), status: 'realizado', criadoEm: agora, atualizadoEm: agora,
+    }
+    if (j.tipo) {
+      ops.push(['set', doc(db, 'jogos', id), { ...base, tipo: j.tipo, titulo: j.titulo, adversarioId: null, placar: null, sumula: null }])
+    } else {
+      ops.push(['set', doc(db, 'jogos', id), {
+        ...base, tipo: 'jogo', titulo: '', adversarioId: adv(j.adversario),
+        placar: { nos: j.placar[0], eles: j.placar[1] },
+        sumula: {
+          presentes: j.presentes.map(jog), gols: ids(j.gols), assistencias: ids(j.assistencias),
+          melhores: j.melhores.map(jog), uniforme: j.uniforme.map(jog), agua: j.agua.map(jog),
+        },
+      }])
+    }
+    res.jogos++
+  }
+
+  // Prêmios extras de cada ano (Melhor do Ano, gols marcantes), sem duplicar títulos que já existam
+  for (const [ano, lista] of Object.entries(PREMIOS_HISTORICOS)) {
+    const atuais = premiacoes.find((p) => p.id === ano)?.manuais || []
+    const titulos = new Set(atuais.map((p) => p.titulo.toLowerCase()))
+    const novos = lista.filter((p) => !titulos.has(p.titulo.toLowerCase()))
+      .map((p) => ({ titulo: p.titulo, detalhe: p.detalhe, jogadores: p.jogadores.map(jog) }))
+    if (!novos.length) continue
+    ops.push(['set', doc(db, 'premiacoes', ano), { manuais: [...atuais, ...novos], atualizadoEm: agora }])
+    res.premios += novos.length
+  }
+
+  for (let i = 0; i < ops.length; i += 400) {
+    const lote = writeBatch(db)
+    ops.slice(i, i + 400).forEach(([, ref, dados]) => lote.set(ref, dados))
+    await lote.commit()
+  }
+  return res
+}
+
 export default function Importar() {
   const [estado, setEstado] = useState('parado') // parado | importando | feito | erro
   const [resultado, setResultado] = useState(null)
+  const [estadoHist, setEstadoHist] = useState('')
+  async function rodarHistorico() {
+    setEstadoHist('importando')
+    try {
+      const r = await importarHistorico()
+      setEstadoHist(`Pronto: ${r.jogos} jogos importados${r.ignorados ? ` (${r.ignorados} já existiam)` : ''} e ${r.premios} prêmios históricos.`
+        + (r.jogadores.length ? ` Jogadores criados (${r.jogadores.length}): ${r.jogadores.join(', ')}.` : '')
+        + (r.adversarios.length ? ` Adversários criados: ${r.adversarios.join(', ')}.` : '')
+        + (r.locais.length ? ` Campos criados: ${r.locais.join(', ')}.` : ''))
+    } catch {
+      setEstadoHist('A importação falhou. Confira se você está logada com uma conta admin. Rodar de novo é seguro.')
+    }
+  }
   const [estadoGrupo, setEstadoGrupo] = useState('')
   async function rodarGrupo() {
     setEstadoGrupo('importando')
@@ -387,6 +491,22 @@ export default function Importar() {
         {estadoGrupo === 'importando' ? 'Importando…' : 'Importar súmulas do grupo'}
       </button>
       {estadoGrupo && estadoGrupo !== 'importando' && <p className="mt-3" role="status">{estadoGrupo}</p>}
+
+      <hr className="my-8 border-linha" />
+
+      <h2 className="font-display text-3xl font-bold">Histórico de 2022 a 2025</h2>
+      <p className="mt-2">
+        Traz os jogos realizados de 2022 a 2025 com súmula completa (quem jogou, gols, assistências a partir de 2023,
+        melhor em campo, uniforme e água), os jogos internos e os prêmios marcantes de cada ano, como Melhor do Ano e gol 500.
+      </p>
+      <p className="mt-2 text-texto-suave">
+        Jogadores antigos entram como inativos, para não aparecerem nas listas do dia a dia. Jogos já importados são ignorados.
+      </p>
+      <button onClick={rodarHistorico} disabled={estadoHist === 'importando'}
+        className="mt-5 rounded-md bg-sangue px-5 py-2.5 font-display text-xl font-bold text-papel hover:bg-sangue-escuro disabled:opacity-60">
+        {estadoHist === 'importando' ? 'Importando…' : 'Importar histórico 2022-2025'}
+      </button>
+      {estadoHist && estadoHist !== 'importando' && <p className="mt-3" role="status">{estadoHist}</p>}
     </div>
   )
 }
