@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Timestamp, collection, doc, getDocs, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 
-const COLECOES = ['jogadores', 'adversarios', 'adversariosPrivado', 'locais', 'jogos', 'premiacoes', 'admins']
+const COLECOES = ['jogadores', 'adversarios', 'adversariosPrivado', 'locais', 'jogos', 'premiacoes', 'financeiro', 'mensalidades', 'lancamentos', 'transparencia', 'admins']
 // admins não é restaurado: as regras só permitem criar admins pelo console
 const RESTAURAVEIS = COLECOES.filter((c) => c !== 'admins')
 
@@ -86,7 +86,7 @@ export default function Backup() {
       <h1 className="font-display text-4xl font-bold">Backup</h1>
       <p className="mt-2">
         Baixa um arquivo com tudo do site: jogadores, adversários (com o controle interno e os contatos), campos, jogos com súmulas,
-        premiações e a lista de admins.
+        premiações, financeiro (mensalidades com nomes e lançamentos) e a lista de admins.
       </p>
       <p className="mt-2 rounded bg-cautela/10 px-3 py-2 text-sm">
         O arquivo tem dados sensíveis, como contatos e motivos de "não marcar". Guarde num lugar privado e não compartilhe em grupos.

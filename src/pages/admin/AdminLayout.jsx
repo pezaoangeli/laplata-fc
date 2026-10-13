@@ -4,6 +4,7 @@ const abas = [
   { to: 'jogos', rotulo: 'Jogos' },
   { to: 'agenda', rotulo: 'Agenda' },
   { to: 'rodizio', rotulo: 'Rodízio' },
+  { to: 'financeiro', rotulo: 'Financeiro' },
   { to: 'jogadores', rotulo: 'Jogadores' },
   { to: 'adversarios', rotulo: 'Adversários' },
   { to: 'locais', rotulo: 'Campos' },

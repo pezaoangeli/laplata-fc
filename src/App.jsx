@@ -21,6 +21,8 @@ import PremiacoesAdmin from './pages/admin/PremiacoesAdmin.jsx'
 import Agenda from './pages/admin/Agenda.jsx'
 import Backup from './pages/admin/Backup.jsx'
 import Rodizio from './pages/admin/Rodizio.jsx'
+import Financeiro from './pages/admin/Financeiro.jsx'
+import Transparencia from './pages/Transparencia.jsx'
 
 export default function App() {
   return (
@@ -33,6 +35,7 @@ export default function App() {
         <Route path="elenco" element={<Elenco />} />
         <Route path="elenco/:id" element={<JogadorDetalhe />} />
         <Route path="adversarios" element={<AdversariosPublico />} />
+        <Route path="transparencia" element={<Transparencia />} />
         <Route path="premiacoes" element={<AdminRoute><Premiacoes /></AdminRoute>} />
         <Route path="entrar" element={<Login />} />
         <Route
@@ -48,6 +51,7 @@ export default function App() {
           <Route path="jogos/:id/sumula" element={<Sumula />} />
           <Route path="agenda" element={<Agenda />} />
           <Route path="rodizio" element={<Rodizio />} />
+          <Route path="financeiro" element={<Financeiro />} />
           <Route path="jogadores" element={<Jogadores />} />
           <Route path="adversarios" element={<Adversarios />} />
           <Route path="locais" element={<Locais />} />
