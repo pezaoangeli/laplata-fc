@@ -47,7 +47,7 @@ export default function AdversariosPublico() {
                     return (
                       <li key={j.id}>
                         <Link to={`/jogos/${j.id}`} className="flex items-center gap-3 py-1.5 hover:underline">
-                          <span className="flex-1">{formatarData(j.data, { diaSemana: false })} de {j.temporada}, {j.mando === 'casa' ? 'em casa' : 'fora'}</span>
+                          <span className="flex-1">{formatarData(j.data, { diaSemana: false, ano: true })}, {j.mando === 'casa' ? 'em casa' : 'fora'}</span>
                           <span className="font-display text-lg font-bold tabular-nums">{j.placar.nos} x {j.placar.eles}</span>
                           <span className={`${CORES_RESULTADO[res]} inline-flex h-6 w-6 items-center justify-center rounded text-sm font-bold`}>{res}</span>
                         </Link>

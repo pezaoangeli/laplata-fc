@@ -41,7 +41,7 @@ export default function JogadorDetalhe() {
           </div>
         ))}
       </dl>
-      <p className="mt-1 text-sm text-texto-suave">Total desde que o site começou a registrar.</p>
+      <p className="mt-1 text-sm text-texto-suave">Total desde {porTemporada.at(-1)?.ano || 'o primeiro registro'}.</p>
 
       {porTemporada.length > 1 && (
         <section className="mt-6">
@@ -57,30 +57,38 @@ export default function JogadorDetalhe() {
 
       <section className="mt-6">
         <h2 className="font-display text-2xl font-bold">Jogos ({partidas.length})</h2>
-        <ul className="mt-2 divide-y divide-linha rounded-lg border border-linha">
-          {partidas.map((j) => {
-            const s = j.sumula
-            const marcas = [
-              s.gols?.[id] && `${s.gols[id]} ${s.gols[id] > 1 ? 'gols' : 'gol'}`,
-              s.assistencias?.[id] && `${s.assistencias[id]} assist.`,
-              s.melhores?.includes(id) && 'melhor em campo',
-            ].filter(Boolean)
-            const res = resultado(j.placar)
-            return (
-              <li key={j.id}>
-                <Link to={`/jogos/${j.id}`} className="flex items-center gap-3 px-3 py-2 hover:bg-cimento">
-                  <span className="w-16 shrink-0 font-display text-lg font-bold">{formatarData(j.data, { diaSemana: false })}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{adversarios[j.adversarioId]?.nome || 'Adversário'}</span>
-                    {marcas.length > 0 && <span className="block text-sm text-texto-suave">{marcas.join(', ')}</span>}
-                  </span>
-                  <span className="font-display text-xl font-bold tabular-nums">{j.placar.nos} x {j.placar.eles}</span>
-                  <span className={`${CORES_RESULTADO[res]} inline-flex h-6 w-6 items-center justify-center rounded text-sm font-bold`}>{res}</span>
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+        {[...new Set(partidas.map((j) => j.temporada))].map((ano) => {
+          const doAno = partidas.filter((j) => j.temporada === ano)
+          return (
+            <div key={ano} className="mt-4">
+              <h3 className="font-display text-xl font-bold">{ano} <span className="text-base font-semibold text-texto-suave">({doAno.length} jogos)</span></h3>
+              <ul className="mt-1 divide-y divide-linha rounded-lg border border-linha">
+                {doAno.map((j) => {
+                  const s = j.sumula
+                  const marcas = [
+                    s.gols?.[id] && `${s.gols[id]} ${s.gols[id] > 1 ? 'gols' : 'gol'}`,
+                    s.assistencias?.[id] && `${s.assistencias[id]} assist.`,
+                    s.melhores?.includes(id) && 'melhor em campo',
+                  ].filter(Boolean)
+                  const res = resultado(j.placar)
+                  return (
+                    <li key={j.id}>
+                      <Link to={`/jogos/${j.id}`} className="flex items-center gap-3 px-3 py-2 hover:bg-cimento">
+                        <span className="w-16 shrink-0 font-display text-lg font-bold">{formatarData(j.data, { diaSemana: false })}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-semibold">{adversarios[j.adversarioId]?.nome || 'Adversário'}</span>
+                          {marcas.length > 0 && <span className="block text-sm text-texto-suave">{marcas.join(', ')}</span>}
+                        </span>
+                        <span className="font-display text-xl font-bold tabular-nums">{j.placar.nos} x {j.placar.eles}</span>
+                        <span className={`${CORES_RESULTADO[res]} inline-flex h-6 w-6 items-center justify-center rounded text-sm font-bold`}>{res}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )
+        })}
       </section>
     </div>
   )

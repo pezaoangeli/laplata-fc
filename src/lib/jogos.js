@@ -13,9 +13,9 @@ export const hojeISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function formatarData(iso, { diaSemana = true } = {}) {
+export function formatarData(iso, { diaSemana = true, ano = false } = {}) {
   const d = comoData(iso)
-  const base = `${String(d.getDate()).padStart(2, '0')}/${MESES[d.getMonth()]}`
+  const base = `${String(d.getDate()).padStart(2, '0')}/${MESES[d.getMonth()]}${ano ? `/${d.getFullYear()}` : ''}`
   return diaSemana ? `${DIAS[d.getDay()]}, ${base}` : base
 }
 

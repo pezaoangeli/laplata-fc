@@ -41,7 +41,7 @@ export default function JogoDetalhe() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-t-2 border-preto px-3 py-2 text-sm">
           {res && <span className={`${CORES_RESULTADO[res]} rounded px-2 py-0.5 font-semibold`}>{ROTULO_RES[res]}</span>}
-          <span>{formatarData(jogo.data)}{jogo.horario ? `, ${jogo.horario.replace(':00', 'h')}` : ''}</span>
+          <span>{formatarData(jogo.data, { ano: true })}{jogo.horario ? `, ${jogo.horario.replace(':00', 'h')}` : ''}</span>
           <span>{jogo.mando === 'casa' ? 'Em casa' : 'Fora'}{locais[jogo.localId] ? `, ${locais[jogo.localId].nome}` : ''}</span>
           {adv?.cidade && <span>{adv.nome} é de {adv.cidade}</span>}
         </div>

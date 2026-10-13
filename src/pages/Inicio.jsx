@@ -52,7 +52,7 @@ export default function Inicio() {
             <>
               <span className="font-display text-3xl font-extrabold leading-none">{nomeConfronto(proximo, adversarios)}</span>
               <span className="text-texto-suave">
-                {formatarData(proximo.data)}{proximo.horario ? `, ${proximo.horario.replace(':00', 'h')}` : ''}, {proximo.mando === 'casa' ? 'em casa' : 'fora'}
+                {formatarData(proximo.data, { ano: proximo.temporada !== ano })}{proximo.horario ? `, ${proximo.horario.replace(':00', 'h')}` : ''}, {proximo.mando === 'casa' ? 'em casa' : 'fora'}
                 {locais[proximo.localId] ? `, ${locais[proximo.localId].nome}` : ''}
               </span>
             </>
@@ -71,7 +71,7 @@ export default function Inicio() {
                 <p className="font-display text-5xl font-extrabold tabular-nums">{ultimo.placar.nos} x {ultimo.placar.eles}</p>
                 <span className={`${CORES_RESULTADO[resultado(ultimo.placar)]} rounded px-2 py-0.5 font-display text-xl font-bold`}>{resultado(ultimo.placar)}</span>
               </div>
-              <p className="mt-1 text-lg">contra {adversarios[ultimo.adversarioId]?.nome || 'adversário'}, {formatarData(ultimo.data)}</p>
+              <p className="mt-1 text-lg">contra {adversarios[ultimo.adversarioId]?.nome || 'adversário'}, {formatarData(ultimo.data, { ano: ultimo.temporada !== ano })}</p>
               <p className="text-sm font-semibold text-sangue-escuro">Ver súmula <span aria-hidden="true">›</span></p>
             </Link>
           ) : <p className="px-4 py-4 text-texto-suave">Nenhum jogo com súmula ainda.</p>}

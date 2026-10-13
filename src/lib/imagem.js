@@ -152,7 +152,7 @@ export async function imagemResultado({ jogo, adversario, local, nomes }) {
     }
   }
 
-  rodape(ctx, `${formatarData(jogo.data)}${local ? `, ${local.nome}` : ''}`)
+  rodape(ctx, `${formatarData(jogo.data, { ano: true })}${local ? `, ${local.nome}` : ''}`)
   return canvas
 }
 

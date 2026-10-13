@@ -127,7 +127,7 @@ export default function Sumula() {
       <Link to="/admin/jogos" className="text-sm font-semibold text-texto-suave hover:text-preto">Voltar para os jogos</Link>
       <h1 className="mt-2 font-display text-4xl font-bold">Súmula</h1>
       <p className="text-texto-suave">
-        {formatarData(jogo.data)}, {jogo.mando === 'casa' ? 'em casa' : 'fora'}
+        {formatarData(jogo.data, { ano: true })}, {jogo.mando === 'casa' ? 'em casa' : 'fora'}
         {locais[jogo.localId] ? `, ${locais[jogo.localId].nome}` : ''}
       </p>
 
