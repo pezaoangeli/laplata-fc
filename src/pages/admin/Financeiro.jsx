@@ -9,6 +9,11 @@ import { temporadaAtual } from '../../lib/temporadas.js'
 import { useCollection } from '../../lib/useCollection.js'
 import SeletorTemporada from '../../components/SeletorTemporada.jsx'
 
+const hojeISO = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function useFinanceiro(ano) {
   const [config, setConfig] = useState({})
   const [mensalidades, setMensalidades] = useState({})
@@ -56,7 +61,7 @@ export default function Financeiro() {
         <div className="mt-5">
           {aba === 'resumo' && <Resumo r={r} config={dados.config} jogadores={jogadores} mensalidades={dados.mensalidades} />}
           {aba === 'mensalidades' && <Mensalidades ano={ano} r={r} mensalidades={dados.mensalidades} jogadores={jogadores} />}
-          {aba === 'lancamentos' && <Lancamentos ano={ano} lancamentos={dados.lancamentos} />}
+          {aba === 'lancamentos' && <Lancamentos ano={ano} lancamentos={dados.lancamentos} mensalidades={dados.mensalidades} jogadores={jogadores} />}
           {aba === 'config' && <Config ano={ano} config={dados.config} r={r} jogadores={jogadores} />}
         </div>
       )}
@@ -146,6 +151,7 @@ const ESTILO_CELULA = {
 function Mensalidades({ ano, r, mensalidades, jogadores }) {
   const [sel, setSel] = useState(null) // { id, mes }
   const [valor, setValor] = useState('')
+  const [dataPag, setDataPag] = useState(hojeISO())
   const [novo, setNovo] = useState('')
   const linhas = Object.entries(mensalidades.jogadores || {}).map(([id, l]) => ({ id, ...l, nome: jogadores.find((j) => j.id === id)?.nome || l.nome || '?' }))
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
@@ -210,7 +216,7 @@ function Mensalidades({ ano, r, mensalidades, jogadores }) {
                   const ativo = sel?.id === l.id && sel?.mes === mes
                   return (
                     <td key={mes} className="px-0.5 py-1">
-                      <button onClick={() => { setSel({ id: l.id, mes }); setValor(paraCampo(c?.valor ?? r.valor)) }}
+                      <button onClick={() => { setSel({ id: l.id, mes }); setValor(paraCampo(c?.valor ?? r.valor)); setDataPag(c?.data || hojeISO()) }}
                         aria-label={`${l.nome}, ${MESES_CURTOS[i]}`}
                         className={`h-8 w-11 rounded text-xs font-semibold tabular-nums ${ESTILO_CELULA[sit]} ${ativo ? 'ring-2 ring-preto' : ''}`}>
                         {c?.isento ? 'DM' : c?.valor ? c.valor : sit === 'atrasado' ? '!' : ''}
@@ -229,19 +235,27 @@ function Mensalidades({ ano, r, mensalidades, jogadores }) {
         <div className="mt-3 rounded-lg border-2 border-preto bg-papel p-4">
           <p className="font-display text-xl font-bold">{selLinha.nome}, {MESES_CURTOS[sel.mes - 1]} de {ano}</p>
           <div className="mt-2 flex flex-wrap items-end gap-2">
-            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: r.valor, data: new Date().toISOString().slice(0, 10) })}
+            <label className="flex items-center gap-1">
+              <span className="text-sm">Pago em</span>
+              <input type="date" className="campo w-auto py-1.5" value={dataPag} max={hojeISO()} onChange={(e) => setDataPag(e.target.value)} />
+            </label>
+            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: r.valor, data: dataPag || hojeISO() })}
               className="rounded-md bg-liberado px-3 py-2 font-semibold text-papel">Pago {moeda(r.valor)}</button>
             <label className="flex items-center gap-1">
               <span className="text-sm">Outro valor</span>
               <input inputMode="decimal" className="campo w-24" value={valor} onChange={(e) => setValor(e.target.value)} />
             </label>
-            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: lerValor(valor) || 0, data: new Date().toISOString().slice(0, 10) })}
+            <button onClick={() => salvarCelula(sel.id, sel.mes, { valor: lerValor(valor) || 0, data: dataPag || hojeISO() })}
               className="rounded-md bg-preto px-3 py-2 font-semibold text-papel">Salvar valor</button>
             <button onClick={() => salvarCelula(sel.id, sel.mes, { isento: true })} className="rounded-md border-2 border-preto px-3 py-2 font-semibold">Isento (DM)</button>
             <button onClick={() => salvarCelula(sel.id, sel.mes, null)} className="px-3 py-2 font-semibold text-sangue-escuro">Limpar</button>
             <button onClick={() => setSel(null)} className="px-3 py-2 text-texto-suave">Fechar</button>
           </div>
-          {selCel?.data && <p className="mt-2 text-sm text-texto-suave">Registrado em {selCel.data.split('-').reverse().join('/')}.</p>}
+          <p className="mt-2 text-sm text-texto-suave">
+            {selCel?.data ? `Pagamento registrado com data de ${selCel.data.split('-').reverse().join('/')}. Para corrigir a data, escolha outra e salve de novo.`
+              : selCel?.valor ? 'Pagamento sem data (veio da planilha). Escolha a data e salve de novo para registrar.'
+              : 'A data já vem com hoje. Se o depósito foi em outro dia, troque antes de salvar.'}
+          </p>
 
           <div className="mt-4 grid gap-3 border-t border-linha pt-3 sm:grid-cols-3">
             <label className="flex items-center gap-2">
@@ -276,10 +290,12 @@ function Mensalidades({ ano, r, mensalidades, jogadores }) {
 
 const vazioLanc = { data: '', tipo: 'saida', categoria: 'campo', descricao: '', valor: '', status: 'pago', forma: 'pix' }
 
-function Lancamentos({ ano, lancamentos }) {
+function Lancamentos({ ano, lancamentos, mensalidades, jogadores }) {
   const [form, setForm] = useState(null)
   const [erro, setErro] = useState('')
   const [filtro, setFiltro] = useState('todos')
+  const [porPagina, setPorPagina] = useState(10)
+  const [pagina, setPagina] = useState(1)
 
   async function salvar(e) {
     e.preventDefault()
@@ -297,17 +313,39 @@ function Lancamentos({ ano, lancamentos }) {
   }
   const marcarPago = (l) => salvarEPublicar(ano, () => updateDoc(doc(db, 'lancamentos', l.id), { status: 'pago', atualizadoEm: serverTimestamp() }))
 
-  const visiveis = lancamentos.filter((l) => filtro === 'todos' || (filtro === 'pendentes' ? l.status !== 'pago' : l.tipo === filtro))
+  // Pagamentos de mensalidade aparecem aqui como entradas, com a data em que foram pagos (só leitura)
+  const nomes = Object.fromEntries(jogadores.map((j) => [j.id, j.nome]))
+  const pagamentos = []
+  for (const [id, linha] of Object.entries(mensalidades.jogadores || {}))
+    for (const [m, c] of Object.entries(linha.meses || {}))
+      if (c?.valor && !c.isento)
+        pagamentos.push({
+          id: `m-${id}-${m}`, mensalidade: true, tipo: 'entrada', status: 'pago', valor: c.valor, data: c.data || '',
+          descricao: `Mensalidade de ${MESES_CURTOS[m - 1].toLowerCase()}: ${nomes[id] || linha.nome || '?'}`,
+        })
+  const todos = [...lancamentos, ...pagamentos].sort((a, b) => (b.data || '').localeCompare(a.data || ''))
+  const visiveis = todos.filter((l) =>
+    filtro === 'todos' ? true
+    : filtro === 'mensalidades' ? l.mensalidade
+    : filtro === 'pendentes' ? l.status !== 'pago'
+    : l.tipo === filtro)
+  const semData = pagamentos.filter((p) => !p.data).length
+  const totalPaginas = Math.max(1, Math.ceil(visiveis.length / porPagina))
+  const paginaAtual = Math.min(pagina, totalPaginas)
+  const daPagina = visiveis.slice((paginaAtual - 1) * porPagina, paginaAtual * porPagina)
 
   return (
     <div>
-      <p className="text-sm text-texto-suave">As mensalidades ficam na aba Mensalidades. Aqui entram as outras entradas e todas as saídas.</p>
+      <p className="text-sm text-texto-suave">
+        Os pagamentos de mensalidade aparecem aqui com a data em que foram pagos, mas são lançados e corrigidos na aba Mensalidades.
+        {semData > 0 && ` ${semData} pagamentos vieram da planilha sem data e aparecem no fim da lista.`}
+      </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        {[['todos', 'Todos'], ['entrada', 'Entradas'], ['saida', 'Saídas'], ['pendentes', 'Pendentes']].map(([v, rot]) => (
-          <button key={v} onClick={() => setFiltro(v)} className={`rounded-full px-3 py-1 text-sm font-semibold ${filtro === v ? 'bg-preto text-papel' : 'bg-papel'}`}>{rot}</button>
+        {[['todos', 'Todos'], ['entrada', 'Entradas'], ['mensalidades', 'Mensalidades'], ['saida', 'Saídas'], ['pendentes', 'Pendentes']].map(([v, rot]) => (
+          <button key={v} onClick={() => { setFiltro(v); setPagina(1) }} className={`rounded-full px-3 py-1 text-sm font-semibold ${filtro === v ? 'bg-preto text-papel' : 'bg-papel'}`}>{rot}</button>
         ))}
         {!form && (
-          <button onClick={() => { setForm({ ...vazioLanc, data: new Date().toISOString().slice(0, 10) }); setErro('') }}
+          <button onClick={() => { setForm({ ...vazioLanc, data: hojeISO() }); setErro('') }}
             className="ml-auto rounded-md bg-sangue px-4 py-2 font-display text-lg font-bold text-papel">Novo lançamento</button>
         )}
       </div>
@@ -354,27 +392,50 @@ function Lancamentos({ ano, lancamentos }) {
       )}
 
       <ul className="mt-4 divide-y divide-linha rounded-lg bg-papel">
-        {visiveis.map((l) => (
+        {daPagina.map((l) => (
           <li key={l.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
-            <span className="w-20 shrink-0 font-display text-base font-bold">{(l.data || '').split('-').reverse().slice(0, 2).join('/')}</span>
+            <span className="w-20 shrink-0 font-display text-base font-bold">{l.data ? l.data.split('-').reverse().slice(0, 2).join('/') : <span className="text-sm font-normal text-texto-suave">sem data</span>}</span>
             <span className="min-w-0 flex-1">
               <span className="block font-semibold">{l.descricao}</span>
               <span className="block text-sm text-texto-suave">
-                {rotuloCategoria(l.tipo, l.categoria)}{l.status !== 'pago' ? (l.tipo === 'saida' ? ', a pagar' : ', a receber') : ''}
+                {l.mensalidade ? 'Mensalidades' : rotuloCategoria(l.tipo, l.categoria)}{l.status !== 'pago' ? (l.tipo === 'saida' ? ', a pagar' : ', a receber') : ''}
               </span>
             </span>
             <span className={`font-display text-xl font-bold tabular-nums ${l.tipo === 'saida' ? 'text-sangue-escuro' : 'text-liberado'}`}>
               {l.tipo === 'saida' ? '−' : '+'}{moeda(l.valor)}
             </span>
-            <span className="flex gap-1">
+            {l.mensalidade ? (
+              <span className="w-[136px] text-right text-xs text-texto-suave">na aba Mensalidades</span>
+            ) : <span className="flex gap-1">
               {l.status !== 'pago' && <button onClick={() => marcarPago(l)} className="rounded bg-liberado px-2 py-1 text-sm font-semibold text-papel">{l.tipo === 'saida' ? 'Paguei' : 'Recebi'}</button>}
               <button onClick={() => { setForm({ ...vazioLanc, ...l, valor: paraCampo(l.valor) }); setErro('') }} className="rounded px-2 py-1 text-sm font-semibold hover:bg-cimento">Editar</button>
               <button onClick={() => excluir(l)} className="rounded px-2 py-1 text-sm font-semibold text-sangue-escuro hover:bg-cimento">Excluir</button>
-            </span>
+            </span>}
           </li>
         ))}
         {!visiveis.length && <li className="px-3 py-3 text-texto-suave">Nenhum lançamento.</li>}
       </ul>
+
+      {visiveis.length > 0 && (
+        <nav className="mt-3 flex flex-wrap items-center gap-3 text-sm" aria-label="Paginação dos lançamentos">
+          <span className="text-texto-suave">
+            Mostrando {(paginaAtual - 1) * porPagina + 1} a {Math.min(paginaAtual * porPagina, visiveis.length)} de {visiveis.length}
+          </span>
+          <label className="flex items-center gap-1">
+            <span className="text-texto-suave">Por página</span>
+            <select className="campo w-auto py-1" value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1) }}>
+              {[10, 20, 50].map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+          <span className="ml-auto flex items-center gap-2">
+            <button onClick={() => setPagina(paginaAtual - 1)} disabled={paginaAtual === 1}
+              className="rounded-md border-2 border-preto px-3 py-1 font-semibold disabled:opacity-30">‹ Anterior</button>
+            <span className="tabular-nums">{paginaAtual} de {totalPaginas}</span>
+            <button onClick={() => setPagina(paginaAtual + 1)} disabled={paginaAtual === totalPaginas}
+              className="rounded-md border-2 border-preto px-3 py-1 font-semibold disabled:opacity-30">Próxima ›</button>
+          </span>
+        </nav>
+      )}
     </div>
   )
 }
@@ -395,7 +456,7 @@ function Config({ ano, config, r, jogadores }) {
     await salvarEPublicar(ano, () => setDoc(doc(db, 'financeiro', String(ano)), {
       saldoInicial: v.saldoInicial || 0, valorMensalidade: v.valorMensalidade || 40,
       diaVencimento: v.diaVencimento || 10, saldoBanco: v.saldoBanco,
-      saldoBancoEm: v.saldoBanco != null ? new Date().toISOString().slice(0, 10) : null, atualizadoEm: serverTimestamp(),
+      saldoBancoEm: v.saldoBanco != null ? hojeISO() : null, atualizadoEm: serverTimestamp(),
     }, { merge: true }))
     setF({ ...f, saldoBanco: paraCampo(v.saldoBanco), saldoInicial: paraCampo(v.saldoInicial || 0) })
     setEstado('Configuração salva.')

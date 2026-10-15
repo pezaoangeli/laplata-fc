@@ -69,6 +69,9 @@ export function calcular({ ano, config = {}, mensalidades = {}, lancamentos = []
       const c = linha.meses?.[m]
       const pago = c?.isento ? 0 : c?.valor || 0
       meses[m - 1].recebido += pago
+      // Para o fluxo de caixa, vale o mês do pagamento; sem data (ou de outro ano), o mês de referência
+      const mesPago = c?.data && Number(c.data.slice(0, 4)) === ano ? Number(c.data.slice(5, 7)) : m
+      meses[mesPago - 1].entradas += pago
       pj.pago += pago
       if (c?.isento || !cobraNoMes(linha, m)) continue
       meses[m - 1].esperado += valor
@@ -92,7 +95,6 @@ export function calcular({ ano, config = {}, mensalidades = {}, lancamentos = []
     if (m) meses[m - 1][l.tipo === 'saida' ? 'saidas' : 'entradas'] += v
   }
   const recebidoMensalidades = meses.reduce((s, m) => s + m.recebido, 0)
-  meses.forEach((m) => (m.entradas += m.recebido))
   const totalEntradas = recebidoMensalidades + Object.values(entradas).reduce((s, v) => s + v, 0)
   const totalSaidas = Object.values(saidas).reduce((s, v) => s + v, 0)
   const saldoInicial = config.saldoInicial || 0
