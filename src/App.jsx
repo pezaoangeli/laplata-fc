@@ -23,6 +23,7 @@ import Backup from './pages/admin/Backup.jsx'
 import Rodizio from './pages/admin/Rodizio.jsx'
 import Financeiro from './pages/admin/Financeiro.jsx'
 import Transparencia from './pages/Transparencia.jsx'
+import Recordes from './pages/Recordes.jsx'
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="elenco/:id" element={<JogadorDetalhe />} />
         <Route path="adversarios" element={<AdversariosPublico />} />
         <Route path="transparencia" element={<Transparencia />} />
+        <Route path="recordes" element={<Recordes />} />
         <Route path="premiacoes" element={<AdminRoute><Premiacoes /></AdminRoute>} />
         <Route path="entrar" element={<Login />} />
         <Route

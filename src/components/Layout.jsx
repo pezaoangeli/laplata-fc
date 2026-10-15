@@ -8,6 +8,7 @@ const SECOES = [
   { to: '/numeros', rotulo: 'Números' },
   { to: '/elenco', rotulo: 'Elenco' },
   { to: '/adversarios', rotulo: 'Adversários' },
+  { to: '/recordes', rotulo: 'Recordes' },
   { to: '/transparencia', rotulo: 'Transparência' },
   { to: '/premiacoes', rotulo: 'Premiações', soAdmin: true },
 ]
