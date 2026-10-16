@@ -3,13 +3,16 @@ import { Link, useParams } from 'react-router-dom'
 import { CORES_RESULTADO, formatarData, porId, resultado, useTodosJogos } from '../lib/jogos.js'
 import { estatisticasJogadores, realizados } from '../lib/estatisticas.js'
 import { useCollection } from '../lib/useCollection.js'
+import { slug } from '../lib/slug.js'
 
 export default function JogadorDetalhe() {
-  const { id } = useParams()
+  const { id: param } = useParams()
   const { jogos, carregando } = useTodosJogos()
   const { dados: jogadores } = useCollection('jogadores')
   const adversarios = porId(useCollection('adversarios').dados)
-  const jogador = jogadores.find((j) => j.id === id)
+  // Aceita o nome no endereço (/elenco/juninho) e também o código antigo, para links já compartilhados
+  const jogador = jogadores.find((j) => slug(j.nome) === param) || jogadores.find((j) => j.id === param)
+  const id = jogador?.id
 
   const { total, porTemporada, partidas } = useMemo(() => {
     const anos = [...new Set(jogos.map((j) => j.temporada))].sort((a, b) => b - a)

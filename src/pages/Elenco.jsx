@@ -4,6 +4,7 @@ import { useTodosJogos } from '../lib/jogos.js'
 import { estatisticasJogadores } from '../lib/estatisticas.js'
 import { temporadaAtual } from '../lib/temporadas.js'
 import { useCollection } from '../lib/useCollection.js'
+import { linkJogador } from '../lib/slug.js'
 
 export default function Elenco() {
   const { jogos } = useTodosJogos()
@@ -40,7 +41,7 @@ function Grade({ itens, stats }) {
         const s = stats[j.id] || {}
         return (
           <li key={j.id}>
-            <Link to={`/elenco/${j.id}`} className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-preto transition-colors hover:border-sangue hover:bg-cimento">
+            <Link to={linkJogador(j)} className="flex h-full flex-col overflow-hidden rounded-lg border-2 border-preto transition-colors hover:border-sangue hover:bg-cimento">
               <div className="flex items-center justify-between bg-preto px-3 py-2">
                 <span className="truncate font-display text-xl font-bold text-papel">{j.nome}</span>
               </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { formatarData, porId, useTodosJogos } from '../lib/jogos.js'
 import { calcularRecordes } from '../lib/recordes.js'
 import { useCollection } from '../lib/useCollection.js'
+import { linkJogador } from '../lib/slug.js'
 
 const dataLonga = (iso) => formatarData(iso, { diaSemana: false, ano: true })
 
@@ -38,7 +39,7 @@ export default function Recordes() {
       <ol className="divide-y divide-linha px-3">
         {lista.map((s, i) => (
           <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
-            <Link to={`/elenco/${s.id}`} className="hover:underline"><span className="mr-2 text-texto-suave tabular-nums">{i + 1}.</span>{nome(s.id)}</Link>
+            <Link to={linkJogador(jogadores[s.id] || { id: s.id })} className="hover:underline"><span className="mr-2 text-texto-suave tabular-nums">{i + 1}.</span>{nome(s.id)}</Link>
             <span className="shrink-0 font-display text-xl font-bold tabular-nums">{s[campo]}</span>
           </li>
         ))}

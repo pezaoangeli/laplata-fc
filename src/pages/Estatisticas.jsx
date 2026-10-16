@@ -4,6 +4,7 @@ import { useTodosJogos } from '../lib/jogos.js'
 import { campanha, estatisticasJogadores } from '../lib/estatisticas.js'
 import { temporadaAtual } from '../lib/temporadas.js'
 import { useCollection } from '../lib/useCollection.js'
+import { linkJogador } from '../lib/slug.js'
 import SeletorTemporada from '../components/SeletorTemporada.jsx'
 
 const COLUNAS = [
@@ -88,7 +89,7 @@ export default function Estatisticas() {
                 <tr key={l.id}>
                   <td className="px-3 py-2 text-texto-suave tabular-nums">{i + 1}</td>
                   <td className="px-3 py-2">
-                    <Link to={`/elenco/${l.id}`} className="font-semibold underline decoration-linha decoration-2 underline-offset-4 hover:decoration-sangue">{l.nome}</Link>
+                    <Link to={linkJogador(l)} className="font-semibold underline decoration-linha decoration-2 underline-offset-4 hover:decoration-sangue">{l.nome}</Link>
                     {l.tipo === 'convidado' && <span className="ml-1 text-xs text-texto-suave">convidado</span>}
                   </td>
                   {COLUNAS.map((col) => (
