@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Timestamp, collection, doc, getDocs, writeBatch } from 'firebase/firestore'
 import { db } from '../../firebase.js'
 
-const COLECOES = ['jogadores', 'adversarios', 'adversariosPrivado', 'locais', 'jogos', 'premiacoes', 'financeiro', 'mensalidades', 'lancamentos', 'transparencia', 'admins']
+const COLECOES = ['jogadores', 'adversarios', 'adversariosPrivado', 'locais', 'jogos', 'premiacoes', 'financeiro', 'mensalidades', 'lancamentos', 'transparencia', 'visitas', 'admins']
 // admins não é restaurado: as regras só permitem criar admins pelo console
 const RESTAURAVEIS = COLECOES.filter((c) => c !== 'admins')
 

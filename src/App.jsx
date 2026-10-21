@@ -22,6 +22,7 @@ import Agenda from './pages/admin/Agenda.jsx'
 import Backup from './pages/admin/Backup.jsx'
 import Rodizio from './pages/admin/Rodizio.jsx'
 import Financeiro from './pages/admin/Financeiro.jsx'
+import Visitas from './pages/admin/Visitas.jsx'
 import Transparencia from './pages/Transparencia.jsx'
 import Recordes from './pages/Recordes.jsx'
 
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="agenda" element={<Agenda />} />
           <Route path="rodizio" element={<Rodizio />} />
           <Route path="financeiro" element={<Financeiro />} />
+          <Route path="visitas" element={<Visitas />} />
           <Route path="jogadores" element={<Jogadores />} />
           <Route path="adversarios" element={<Adversarios />} />
           <Route path="locais" element={<Locais />} />
