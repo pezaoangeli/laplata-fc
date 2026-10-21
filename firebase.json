@@ -35,6 +35,23 @@
           }
         ]
       }
+    ],
+    "redirects": [
+      {
+        "source": "/insta",
+        "destination": "/?origem=instagram",
+        "type": 302
+      },
+      {
+        "source": "/zap",
+        "destination": "/?origem=whatsapp",
+        "type": 302
+      },
+      {
+        "source": "/qr",
+        "destination": "/?origem=qrcode",
+        "type": 302
+      }
     ]
   }
 }

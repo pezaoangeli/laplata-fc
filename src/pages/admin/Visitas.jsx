@@ -4,7 +4,7 @@ import { db } from '../../firebase.js'
 
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const diasAtras = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return iso(d) }
-const ROTULOS = { direto: 'Direto ou WhatsApp', instagram: 'Instagram', facebook: 'Facebook', google: 'Google', outros: 'Outros sites' }
+const ROTULOS = { direto: 'Direto (sem origem)', instagram: 'Instagram', whatsapp: 'WhatsApp', qrcode: 'QR code', facebook: 'Facebook', google: 'Google', outros: 'Outros sites' }
 
 export default function Visitas() {
   const [dias, setDias] = useState(null)
@@ -31,7 +31,7 @@ export default function Visitas() {
     return { hoje: porDia[diasAtras(0)]?.total || 0, d7: soma(7), d30: soma(30), ano: soma(365), serie, origens, max: Math.max(1, ...serie.map((s) => s.total)) }
   }, [dias, periodo])
 
-  const linkInstagram = `${window.location.origin}/?origem=instagram`
+  const host = window.location.host
 
   if (!r) return <p className="text-texto-suave">Carregando…</p>
   const totalOrigens = Object.values(r.origens).reduce((s, v) => s + v, 0)
@@ -87,16 +87,24 @@ export default function Visitas() {
       </section>
 
       <section className="mt-6 rounded-lg border-2 border-preto bg-papel p-4">
-        <h2 className="font-display text-2xl font-bold">Link para a bio do Instagram</h2>
+        <h2 className="font-display text-2xl font-bold">Links de divulgação</h2>
         <p className="mt-1 text-sm">
-          Use este link no Instagram para saber exatamente quantas visitas vieram de lá. Dá para criar outros trocando o final,
-          como <code>?origem=whatsapp</code> no grupo ou <code>?origem=cartaz</code> num QR code.
+          Use estes endereços curtos para saber quantas visitas vieram de cada lugar. Eles levam para a página inicial,
+          e o visitante não vê nenhuma marcação no endereço.
         </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input readOnly className="campo max-w-md font-mono text-sm" value={linkInstagram} aria-label="Link para o Instagram" />
-          <button onClick={async () => { await navigator.clipboard.writeText(linkInstagram); setCopiado(true); setTimeout(() => setCopiado(false), 2000) }}
-            className="rounded-md bg-sangue px-4 font-display text-lg font-bold text-papel">{copiado ? 'Copiado' : 'Copiar link'}</button>
-        </div>
+        <ul className="mt-3 space-y-2">
+          {[['Bio do Instagram', 'insta'], ['Grupo do WhatsApp', 'zap'], ['QR code (cartaz, camiseta)', 'qr']].map(([rotulo, caminho]) => {
+            const link = `${host}/${caminho}`
+            return (
+              <li key={caminho} className="flex flex-wrap items-center gap-2">
+                <span className="w-56 text-sm font-semibold">{rotulo}</span>
+                <code className="rounded bg-cimento px-2 py-1 text-sm">{link}</code>
+                <button onClick={async () => { await navigator.clipboard.writeText(`https://${link}`); setCopiado(caminho); setTimeout(() => setCopiado(false), 2000) }}
+                  className="rounded-md bg-sangue px-3 py-1 text-sm font-bold text-papel">{copiado === caminho ? 'Copiado' : 'Copiar'}</button>
+              </li>
+            )
+          })}
+        </ul>
       </section>
     </div>
   )

@@ -19,11 +19,21 @@ function origem() {
 }
 
 // Conta uma visita por sessão do navegador (navegar entre páginas não conta de novo). Só no site publicado.
+// Tira o ?origem=... da barra de endereço depois de ler, para o link ficar limpo
+function limparEndereco() {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('origem')) return
+  url.searchParams.delete('origem')
+  window.history.replaceState(null, '', url.pathname + (url.search || '') + url.hash)
+}
+
 export function registrarVisita() {
-  if (!import.meta.env.PROD) return
+  if (!import.meta.env.PROD) return limparEndereco()
   try {
-    if (sessionStorage.getItem('visitaContada')) return
+    if (sessionStorage.getItem('visitaContada')) return limparEndereco()
     sessionStorage.setItem('visitaContada', '1')
   } catch { /* navegador sem sessionStorage: conta mesmo assim */ }
-  setDoc(doc(db, 'visitas', hoje()), { total: increment(1), origens: { [origem()]: increment(1) } }, { merge: true }).catch(() => {})
+  const o = origem()
+  limparEndereco()
+  setDoc(doc(db, 'visitas', hoje()), { total: increment(1), origens: { [o]: increment(1) } }, { merge: true }).catch(() => {})
 }
